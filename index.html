@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>Scheduler</title>
+
+		<link rel="stylesheet" href="style.css">
+		<script defer src="script.js"></script>
+	</head>
+
+	<body>
+		<header class="navbar">
+			<h1 class="title">Scheduler</h1>
+			<div class="utilities">
+				<button>In</button>
+				<button>Out</button>
+				<button>Sync</button>
+			</div>
+		</header>
+
+		<main class="content">
+			<section class="column draggable-list" id="sets-list">
+				<h1>Sets</h1>
+				<div class="button-container">
+					<button class="add">Add</button>
+				</div>
+				<ul id="sets">
+				</ul>
+			</section>
+			<section class="column draggable-list" id="timers-list">
+				<h1>Timers</h1>
+				<div class="timer-set-header">
+					<h2>Set Name</h2>
+					<button class="add">Add</button>
+				</div>
+				<ul id="timers">
+				</ul>
+			</section>
+			<section class="column">
+				<h1>Active Timer</h1>
+				<div id="active-timer"></div>
+			</section>
+		</main>
+
+	</body>
+
+</html>
