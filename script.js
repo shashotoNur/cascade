@@ -1,13 +1,35 @@
 const setsList = document.getElementById("sets-list");
 const timersList = document.getElementById("timers-list");
 const currentSet = document.getElementById("current-set");
-const countdown = document.getElementById("countdown");
+const countdownDisplay = document.getElementById("countdown");
+const syncBtn = document.getElementById("sync-btn");
+const importBtn = document.getElementById("import-btn");
+const importBtnProxy = document.getElementById("import-btn-proxy");
+
+importBtnProxy.onclick = () => importBtn.click();
 
 const setsString = localStorage.getItem("sets");
 const sets = setsString ? JSON.parse(setsString) : [];
 
-let isIntervalRunning = false;
-let intervalId;
+let intervalId,
+    duration = 0;
+syncBtn.onclick = () => {
+    clearInterval(intervalId);
+
+    const now = new Date();
+    const currentTime =
+        now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    findAndStartTimer(sets, currentTime);
+};
+
+function hasTitle(array, title) {
+    for (const object of array) {
+        if (object.title === title) {
+            return true;
+        }
+    }
+    return false;
+}
 
 const initializeSets = (sets) => {
     setsList.querySelector("ul").innerHTML = "";
@@ -16,11 +38,11 @@ const initializeSets = (sets) => {
     );
 };
 
-const initializeTimers = (timers) => {
+const initializeTimers = (timers, setTitle) => {
     const timerUL = timersList.querySelector("ul");
     timerUL.innerHTML = "";
     timers.forEach((_, index) =>
-        timerUL.appendChild(createTimer(timers, index))
+        timerUL.appendChild(createTimer(timers, index, setTitle))
     );
 };
 
@@ -31,6 +53,14 @@ const addNewSet = () => {
         time: "",
         timers: [],
     };
+
+    let i = 1;
+    while (true) {
+        const titleExists = hasTitle(sets, newSet.title);
+        if (!titleExists) break;
+        newSet.title = `New Set (${i})`;
+        i++;
+    }
 
     sets.push(newSet);
     initializeSets(sets);
@@ -48,52 +78,78 @@ const addNewTimer = () => {
     const targetSetIndex = sets.findIndex(
         (set) => set.title === currentSet.innerText
     );
+
+    const { timers } = sets[targetSetIndex];
+
+    let i = 1;
+    while (true) {
+        const titleExists = hasTitle(timers, newTimer.title);
+        if (!titleExists) break;
+        newTimer.title = `New Timer (${i})`;
+        i++;
+    }
+
     sets[targetSetIndex].timers.push(newTimer);
 
-    initializeTimers(sets[targetSetIndex].timers);
+    initializeTimers(sets[targetSetIndex].timers, sets[targetSetIndex].title);
     localStorage.setItem("sets", JSON.stringify(sets));
 };
 
-const startCounting = (timers, index) => {
+const startCounting = (timers, index, partialStart = false, setTitle) => {
+    clearInterval(intervalId);
     const timer = timers[index];
     if (!timer) {
-        countdown.textContent = "";
+        countdownDisplay.textContent = "";
         document.title = "Scheduler";
         return;
     }
-    createActiveTimer(timers, index);
+    createActiveTimer(timers, index, setTitle);
 
-    const prefix = timer.title + " [" + currentSet.textContent + "]: ";
+    const prefix = timer.title + " [" + setTitle + "]: ";
     let [hours, minutes, seconds] = timer.time.split(":").map(Number);
+    if (!partialStart) duration = hours * 3600 + minutes * 60 + seconds;
 
-    let duration = hours * 3600 + minutes * 60 + seconds;
-
-    if (isIntervalRunning) return;
+    let totalSetTime = 0,
+        completedDuration = 0;
+    const set = sets.find((set) => set.title === setTitle);
+    set.timers.forEach((timer, i) => {
+        let [hours, minutes, seconds] = timer.time.split(":").map(Number);
+        const timerTimeInSec = hours * 3600 + minutes * 60 + seconds;
+        if (i < index) {
+            completedDuration += timerTimeInSec;
+        }
+        totalSetTime += timerTimeInSec;
+    });
 
     const initialDuration = duration;
-    intervalId = setInterval(() => {
+    intervalId = setInterval(function recurse() {
         minutes = parseInt(duration / 60, 10);
         seconds = parseInt(duration % 60, 10);
 
         minutes = minutes < 10 ? "0" + minutes : minutes;
         seconds = seconds < 10 ? "0" + seconds : seconds;
 
-        isIntervalRunning = true;
-        countdown.textContent = prefix + minutes + ":" + seconds;
+        countdownDisplay.textContent = prefix + minutes + ":" + seconds;
         document.title = minutes + ":" + seconds;
-        progress = ((initialDuration - duration) * 100) / initialDuration;
+        const progress = ((initialDuration - duration) * 100) / initialDuration;
         const progressBar = document.getElementById(
-            `timer-${timers[index].title}`
+            `timer-${timers[index].title.replace(" ", "-")}`
         );
         const activeBar = document.getElementById(
-            `timer-${timers[index].title}-active`
+            `timer-${timers[index].title.replace(" ", "-")}-active`
         );
-        progressBar.value = progress;
+        if (progressBar) progressBar.value = progress;
         activeBar.value = progress;
+
+        completedDuration += 1;
+        const setProgress = (completedDuration * 100) / totalSetTime;
+        const setProgressBar = document.getElementById(
+            `set-${setTitle.replace(" ", "-")}`
+        );
+        if (setProgressBar) setProgressBar.value = setProgress;
 
         if (--duration < 0) {
             clearInterval(intervalId);
-            isIntervalRunning = false;
             if (timer.alert) {
                 sendNotification(
                     timer.title,
@@ -101,8 +157,9 @@ const startCounting = (timers, index) => {
                 );
             }
 
-            startCounting(timers, index + 1);
+            startCounting(timers, index + 1, false, setTitle);
         }
+        return recurse;
     }, 1000);
 };
 
@@ -139,12 +196,12 @@ const exportSetsToFile = () => {
     window.setTimeout(() => URL.revokeObjectURL(downloadLink.href), 10 * 1000);
 };
 
-const createProgressBar = (max, title) => {
+const createProgressBar = (max, id) => {
     const progress = document.createElement("progress");
     progress.className = "progress";
     progress.value = 0;
     progress.max = max;
-    progress.id = `timer-${title}`;
+    progress.id = id;
     return progress;
 };
 
@@ -157,6 +214,7 @@ const createLabel = (text) => {
 const createDurationPicker = (time) => {
     const picker = document.createElement("input");
     picker.type = "text";
+    picker.className = "duration-picker";
 
     const acceptedKeys = [
         "Backspace",
@@ -167,25 +225,22 @@ const createDurationPicker = (time) => {
     ];
 
     const selectFocus = (event) => {
-        //get cursor position and select nearest block;
         const cursorPosition = event.target.selectionStart;
-        ("000:00:00"); //this is the format used to determine cursor location
         const hourMarker = event.target.value.indexOf(":");
         const minuteMarker = event.target.value.lastIndexOf(":");
         if (hourMarker < 0 || minuteMarker < 0) {
-            //something wrong with the format. just return;
             return;
         }
         if (cursorPosition < hourMarker) {
-            event.target.selectionStart = 0; //hours mode
+            event.target.selectionStart = 0;
             event.target.selectionEnd = hourMarker;
         }
         if (cursorPosition > hourMarker && cursorPosition < minuteMarker) {
-            event.target.selectionStart = hourMarker + 1; //minutes mode
+            event.target.selectionStart = hourMarker + 1;
             event.target.selectionEnd = minuteMarker;
         }
         if (cursorPosition > minuteMarker) {
-            event.target.selectionStart = minuteMarker + 1; //seconds mode
+            event.target.selectionStart = minuteMarker + 1;
             event.target.selectionEnd = minuteMarker + 3;
         }
     };
@@ -235,7 +290,7 @@ const createDurationPicker = (time) => {
     const validateInput = (event) => {
         sectioned = event.target.value.split(":");
         if (sectioned.length !== 3) {
-            event.target.value = "000:00:00"; //fallback to default
+            event.target.value = "000:00:00";
             return;
         }
         if (isNaN(sectioned[0])) {
@@ -257,9 +312,8 @@ const createDurationPicker = (time) => {
     };
 
     picker.value = time ? time : "000:00:00";
-    picker.style.textAlign = "right"; //align the values to the right (optional)
+    picker.style.textAlign = "right";
     picker.addEventListener("keydown", (event) => {
-        //use arrow keys to increase value;
         if (event.key == "ArrowDown" || event.key == "ArrowUp") {
             if (event.key == "ArrowDown") {
                 decreaseValue(event.target);
@@ -267,17 +321,17 @@ const createDurationPicker = (time) => {
             if (event.key == "ArrowUp") {
                 increaseValue(event.target);
             }
-            event.preventDefault(); //prevent default
+            event.preventDefault();
         }
 
         if (isNaN(event.key) && !acceptedKeys.includes(event.key)) {
-            event.preventDefault(); //prevent default
+            event.preventDefault();
             return false;
         }
     });
 
-    picker.addEventListener("focus", selectFocus); //selects a block of hours, minutes etc
-    picker.addEventListener("click", selectFocus); //selects a block of hours, minutes etc
+    picker.addEventListener("focus", selectFocus);
+    picker.addEventListener("click", selectFocus);
     picker.addEventListener("change", validateInput);
     picker.addEventListener("blur", validateInput);
     picker.addEventListener("keyup", validateInput);
@@ -285,18 +339,18 @@ const createDurationPicker = (time) => {
     return picker;
 };
 
-const createNavigationButton = (timers, index) => {
+const createNavigationButton = (timers, index, setTitle) => {
     const btn = document.createElement("button");
     btn.textContent = timers[index]?.title || "None";
     btn.disabled = !timers[index]?.title;
     btn.onclick = () => {
-        createActiveTimer(timers, index);
-        startCounting(timers, index);
+        createActiveTimer(timers, index, setTitle);
+        startCounting(timers, index, false, setTitle);
     };
     return btn;
 };
 
-const createScheduleButton = (setData) => {
+const createScheduleButton = (setData, inputField) => {
     const scheduleBtn = document.createElement("button");
     scheduleBtn.textContent = setData.scheduled ? "Scheduled" : "Not scheduled";
     scheduleBtn.addEventListener("click", () => {
@@ -305,16 +359,15 @@ const createScheduleButton = (setData) => {
             ? "Scheduled"
             : "Not scheduled";
 
-        if (setData.scheduled) return;
-
-        setData.time = null;
+        if (!setData.scheduled) setData.time = null;
+        else setData.time = inputField.value;
         initializeSets(sets);
         localStorage.setItem("sets", JSON.stringify(sets));
     });
     return scheduleBtn;
 };
 
-const createActiveTimer = (timers, index) => {
+const createActiveTimer = (timers, index, setTitle) => {
     if (!timers[index]) return;
     const timer = document.getElementById("active-timer");
     timer.textContent = "";
@@ -322,9 +375,8 @@ const createActiveTimer = (timers, index) => {
     const timerData = timers[index];
 
     const header = createActiveTimerHeader(timerData);
-    const body = createActiveTimerBody(timers, index);
+    const body = createActiveTimerBody(timers, index, setTitle);
 
-    // Build the timer structure
     timer.appendChild(header);
     timer.appendChild(body);
 
@@ -347,12 +399,16 @@ const createActiveTimerHeader = (timerData) => {
     return header;
 };
 
-const createActiveTimerBody = (timers, index) => {
+const createActiveTimerBody = (timers, index, setTitle) => {
     const detailDiv = document.createElement("div");
     const controlDiv = document.createElement("div");
     controlDiv.className = "control-div";
+    const br = document.createElement("br");
 
-    const progress = createProgressBar(100, timers[index].title + "-active");
+    const progress = createProgressBar(
+        100,
+        `timer-${timers[index].title.replace(" ", "-")}` + "-active"
+    );
     const alertBox = document.createElement("input");
     alertBox.setAttribute("type", "checkbox");
     alertBox.checked = timers[index].alert;
@@ -370,39 +426,79 @@ const createActiveTimerBody = (timers, index) => {
         localStorage.setItem("sets", JSON.stringify(sets));
     };
 
-    const prevBtn = createNavigationButton(timers, index - 1, progress);
-    const nextBtn = createNavigationButton(timers, index + 1, progress);
+    const prevBtn = createNavigationButton(timers, index - 1, setTitle);
+    const nextBtn = createNavigationButton(timers, index + 1, setTitle);
+
+    prevBtn.className = "nav-btn";
+    nextBtn.className = "nav-btn";
 
     const stopBtn = document.createElement("button");
     stopBtn.textContent = "▣";
     stopBtn.onclick = () => {
         clearInterval(intervalId);
-        countdown.textContent = "";
+        countdownDisplay.textContent = "";
         document.title = "Scheduler";
     };
 
     const pauseBtn = document.createElement("button");
     pauseBtn.textContent = "||";
-    const removeTimeBtn = document.createElement("button");
-    removeTimeBtn.textContent = " - ";
+    pauseBtn.onclick = () => {
+        if (countdownDisplay.textContent == "") return;
+        if (pauseBtn.textContent == "||") {
+            clearInterval(intervalId);
+        } else startCounting(timers, index, (partialStart = true), setTitle);
+        pauseBtn.textContent = pauseBtn.textContent == "||" ? ">" : "||";
+    };
+
     const timeChange = document.createElement("input");
     timeChange.type = "text";
+    timeChange.value = "0";
+    const removeTimeBtn = document.createElement("button");
+    removeTimeBtn.textContent = " - ";
+    removeTimeBtn.onclick = () => {
+        const timeValue = parseInt(timeChange.value);
+        duration -= timeValue;
+        timeChange.value = "0";
+    };
     const addTimeBtn = document.createElement("button");
     addTimeBtn.textContent = " + ";
+    addTimeBtn.onclick = () => {
+        const timeValue = parseInt(timeChange.value);
+        duration += timeValue;
+        timeChange.value = "0";
+    };
 
-    controlDiv.appendChild(stopBtn);
-    controlDiv.appendChild(pauseBtn);
-    controlDiv.appendChild(removeTimeBtn);
-    controlDiv.appendChild(timeChange);
-    controlDiv.appendChild(addTimeBtn);
+    const firstControl = document.createElement("div");
+    const secondControl = document.createElement("div");
 
-    detailDiv.appendChild(progress);
-    detailDiv.appendChild(alertBox);
-    detailDiv.appendChild(createLabel("Alert"));
+    firstControl.appendChild(stopBtn);
+    firstControl.appendChild(pauseBtn);
+    secondControl.appendChild(removeTimeBtn);
+    secondControl.appendChild(timeChange);
+    secondControl.appendChild(addTimeBtn);
+
+    controlDiv.appendChild(firstControl);
+    controlDiv.appendChild(secondControl);
+
+    const progressDiv = document.createElement("div");
+    progressDiv.appendChild(progress);
+
+    const alertDiv = document.createElement("div");
+    alertDiv.className = "alert-div";
+    const alertLabel = createLabel("Alert");
+    alertLabel.className = "alert-label";
+    alertDiv.appendChild(alertBox);
+    alertDiv.appendChild(alertLabel);
+
+    const navDiv = document.createElement("div");
+    navDiv.appendChild(prevBtn);
+    navDiv.appendChild(nextBtn);
+
+    detailDiv.appendChild(progressDiv);
+    detailDiv.appendChild(alertDiv);
     detailDiv.appendChild(inputField);
     detailDiv.appendChild(saveBtn);
-    detailDiv.appendChild(prevBtn);
-    detailDiv.appendChild(nextBtn);
+    detailDiv.appendChild(navDiv);
     detailDiv.appendChild(controlDiv);
 
     const body = document.createElement("div");
@@ -413,13 +509,13 @@ const createActiveTimerBody = (timers, index) => {
     return body;
 };
 
-const createTimer = (timers, index) => {
+const createTimer = (timers, index, setTitle) => {
     const timer = document.createElement("li");
     timer.classList.add("timer");
     timer.draggable = true;
 
     const header = createTimerHeader(timers, index);
-    const body = createTimerBody(timers, index);
+    const body = createTimerBody(timers, index, setTitle);
 
     header.addEventListener("click", () => {
         body.style.maxHeight = body.style.maxHeight
@@ -445,13 +541,17 @@ const createTimerHeader = (timers, index) => {
     titleDiv.textContent = timerData.title;
     titleDiv.onclick = () => {
         titleDiv.contentEditable = true;
-        titleDiv.focus(); // Set focus for immediate editing
+        titleDiv.focus();
     };
 
     titleDiv.onkeydown = (event) => {
         if (event.key !== "Enter") return;
 
-        const newTitle = titleDiv.textContent.trim();
+        let newTitle = titleDiv.textContent.trim();
+
+        const titleExists = hasTitle(timers, newTitle);
+        if (titleExists) newTitle = timerData.title;
+
         titleDiv.contentEditable = false;
 
         const setIndex = sets.findIndex(
@@ -470,11 +570,14 @@ const createTimerHeader = (timers, index) => {
     return header;
 };
 
-const createTimerBody = (timers, index) => {
+const createTimerBody = (timers, index, setTitle) => {
     const body = document.createElement("div");
     body.classList.add("body");
 
-    const progress = createProgressBar(100, timers[index].title);
+    const progress = createProgressBar(
+        100,
+        `timer-${timers[index].title.replace(" ", "-")}`
+    );
     const alertBox = document.createElement("input");
     alertBox.setAttribute("type", "checkbox");
     alertBox.checked = timers[index].alert;
@@ -493,7 +596,7 @@ const createTimerBody = (timers, index) => {
 
     const startBtn = document.createElement("button");
     startBtn.textContent = "Start";
-    startBtn.onclick = () => startCounting(timers, index);
+    startBtn.onclick = () => startCounting(timers, index, false, setTitle);
 
     const deleteBtn = document.createElement("button");
     deleteBtn.textContent = "Delete";
@@ -507,9 +610,18 @@ const createTimerBody = (timers, index) => {
         localStorage.setItem("sets", JSON.stringify(sets));
     };
 
-    body.appendChild(progress);
-    body.appendChild(alertBox);
-    body.appendChild(createLabel("Alert"));
+    const progressDiv = document.createElement("div");
+    progressDiv.appendChild(progress);
+
+    const alertDiv = document.createElement("div");
+    alertDiv.className = "alert-div";
+    const alertLabel = createLabel("Alert");
+    alertLabel.className = "alert-label";
+    alertDiv.appendChild(alertBox);
+    alertDiv.appendChild(alertLabel);
+
+    body.appendChild(progressDiv);
+    body.appendChild(alertDiv);
     body.appendChild(inputField);
     body.appendChild(saveBtn);
     body.appendChild(startBtn);
@@ -533,7 +645,7 @@ const createSet = (sets, index) => {
 
         const { timers } = sets[index];
         currentSet.innerText = sets[index].title;
-        initializeTimers(timers);
+        initializeTimers(timers, sets[index].title);
     });
 
     set.appendChild(header);
@@ -551,13 +663,17 @@ const createSetHeader = (sets, index) => {
     titleDiv.textContent = setData.title;
     titleDiv.onclick = () => {
         titleDiv.contentEditable = true;
-        titleDiv.focus(); // Set focus for immediate editing
+        titleDiv.focus();
     };
 
     titleDiv.onkeydown = (event) => {
         if (event.key !== "Enter") return;
 
-        const newTitle = titleDiv.textContent.trim();
+        let newTitle = titleDiv.textContent.trim();
+
+        const setExists = hasTitle(sets, newTitle);
+        if (setExists) newTitle = setData.title;
+
         titleDiv.contentEditable = false;
 
         sets[index].title = newTitle;
@@ -578,7 +694,10 @@ const createSetBody = (sets, index) => {
     const body = document.createElement("div");
     body.classList.add("body");
 
-    const progress = createProgressBar(100, setData.title);
+    const progress = createProgressBar(
+        100,
+        `set-${setData.title.replace(" ", "-")}`
+    );
     const inputField = document.createElement("input");
     inputField.className = "input-field";
     inputField.type = "time";
@@ -589,13 +708,12 @@ const createSetBody = (sets, index) => {
             const enteredTime = inputField.value;
             sets[index].time = enteredTime;
             sets[index].scheduled = true;
-            console.log(sets);
             initializeSets(sets);
             localStorage.setItem("sets", JSON.stringify(sets));
         }
     });
 
-    const scheduleBtn = createScheduleButton(setData);
+    const scheduleBtn = createScheduleButton(setData, inputField);
     const deleteButton = document.createElement("button");
     deleteButton.textContent = "Delete";
     deleteButton.onclick = () => {
@@ -613,16 +731,6 @@ const createSetBody = (sets, index) => {
     return body;
 };
 
-// Populate list items for sets and timers
-initializeSets(sets);
-
-if (sets.length > 0) {
-    const { timers } = sets[0];
-    currentSet.innerText = sets[0].title;
-    initializeTimers(timers);
-    createActiveTimer(timers, 0);
-}
-
 const importFileInput = document.getElementById("import-btn");
 importFileInput.addEventListener("change", handleImportFile);
 
@@ -634,10 +742,6 @@ addSetButton.addEventListener("click", addNewSet);
 
 const addTimerButton = document.getElementById("add-timer-btn");
 addTimerButton.addEventListener("click", addNewTimer);
-
-// --------------------------------------------------------------
-// ---------------- Drag and Drop functionality -----------------
-// --------------------------------------------------------------
 
 let draggedItem = null;
 
@@ -781,8 +885,6 @@ function requestNotificationPermission() {
     });
 }
 
-requestNotificationPermission();
-
 function sendNotification(title, body, icon = "") {
     if (Notification.permission === "granted") {
         const notification = new Notification(title, {
@@ -797,3 +899,65 @@ function sendNotification(title, body, icon = "") {
         console.log("Notification permission not granted.");
     }
 }
+
+if (sets.length > 0) {
+    initializeSets(sets);
+    const { timers } = sets[0];
+    currentSet.innerText = sets[0].title;
+    initializeTimers(timers, sets[0].title);
+    createActiveTimer(timers, 0, sets[0].title);
+    requestNotificationPermission();
+}
+
+function findAndStartTimer(sets, currentTime) {
+    for (const set of sets) {
+        if (!set.time) set.time = "00:00";
+        const startTime = parseTimeString(set.time + ":00");
+        const endTime = calculateEndTime(startTime, set.timers);
+
+        if (currentTime >= startTime && currentTime <= endTime) {
+            const elapsedTime = currentTime - startTime;
+            const { timers } = set;
+
+            let accumulatedTime = 0,
+                index = 0;
+
+            for (const timer of timers) {
+                const timerDuration = parseTimeString(timer.time);
+                accumulatedTime += timerDuration;
+
+                if (elapsedTime < accumulatedTime) {
+                    initializeTimers(timers, set.title);
+                    duration = accumulatedTime - elapsedTime;
+
+                    startCounting(timers, index, true, set.title);
+                    return timer;
+                }
+                index++;
+            }
+        }
+    }
+    countdownDisplay.textContent = "No timer scheduled for now";
+    document.title = "Scheduler";
+
+    setTimeout(() => (countdownDisplay.textContent = ""), 3000);
+}
+
+function parseTimeString(timeString) {
+    const [hours, minutes, seconds] = timeString.split(":").map(Number);
+    return hours * 3600 + minutes * 60 + seconds;
+}
+
+function calculateEndTime(startTime, timers) {
+    const totalTimerDuration = timers.reduce((acc, timer) => {
+        return acc + parseTimeString(timer.time);
+    }, 0);
+
+    return startTime + totalTimerDuration;
+}
+
+const now = new Date();
+const currentTime =
+    now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+findAndStartTimer(sets, currentTime);
