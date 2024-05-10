@@ -1,71 +1,151 @@
 const setsList = document.getElementById("sets-list");
 const timersList = document.getElementById("timers-list");
+const currentSet = document.getElementById("current-set");
+const countdown = document.getElementById("countdown");
 
-const sets = [
-    {
-        title: "Morning",
-        scheduled: true,
-        time: "09:00",
-        timers: [
-            {
-                title: "Rest",
-                time: 10,
-                alert: false,
-            },
-            {
-                title: "Cardio",
-                time: 60,
-                alert: true,
-            },
-        ],
-    },
-    {
-        title: "Afternoon",
-        scheduled: false,
-        timers: [
-            {
-                title: "Warm-up",
-                time: 10,
-                alert: false,
-            },
-            {
-                title: "Strength training",
-                time: 60,
-                alert: true,
-            },
-            {
-                title: "Cool-down",
-                time: 15,
-                alert: false,
-            },
-        ],
-    },
-    {
-        title: "Evening",
-        scheduled: true,
-        time: "18:00",
-        timers: [
-            {
-                title: "Yoga",
-                time: 30,
-                alert: true,
-            },
-        ],
-    },
-];
+const setsString = localStorage.getItem("sets");
+const sets = setsString ? JSON.parse(setsString) : [];
 
-const createProgressBar = (value, max) => {
-    const progress = document.createElement("progress");
-    progress.className = "progress";
-    progress.value = value;
-    progress.max = max;
-    return progress;
+let isIntervalRunning = false;
+let intervalId;
+
+const initializeSets = (sets) => {
+    setsList.querySelector("ul").innerHTML = "";
+    sets.forEach((_, index) =>
+        setsList.querySelector("ul").appendChild(createSet(sets, index))
+    );
 };
 
-const createCheckbox = () => {
-    const checkBox = document.createElement("input");
-    checkBox.setAttribute("type", "checkbox");
-    return checkBox;
+const initializeTimers = (timers) => {
+    const timerUL = timersList.querySelector("ul");
+    timerUL.innerHTML = "";
+    timers.forEach((_, index) =>
+        timerUL.appendChild(createTimer(timers, index))
+    );
+};
+
+const addNewSet = () => {
+    const newSet = {
+        title: "New Set",
+        scheduled: false,
+        time: "",
+        timers: [],
+    };
+
+    sets.push(newSet);
+    initializeSets(sets);
+
+    localStorage.setItem("sets", JSON.stringify(sets));
+};
+
+const addNewTimer = () => {
+    const newTimer = {
+        title: "New Timer",
+        time: "",
+        alert: false,
+    };
+
+    const targetSetIndex = sets.findIndex(
+        (set) => set.title === currentSet.innerText
+    );
+    sets[targetSetIndex].timers.push(newTimer);
+
+    initializeTimers(sets[targetSetIndex].timers);
+    localStorage.setItem("sets", JSON.stringify(sets));
+};
+
+const startCounting = (timers, index) => {
+    const timer = timers[index];
+    if (!timer) {
+        countdown.textContent = "";
+        document.title = "Scheduler";
+        return;
+    }
+    createActiveTimer(timers, index);
+
+    const prefix = timer.title + " [" + currentSet.textContent + "]: ";
+    let [hours, minutes, seconds] = timer.time.split(":").map(Number);
+
+    let duration = hours * 3600 + minutes * 60 + seconds;
+
+    if (isIntervalRunning) return;
+
+    const initialDuration = duration;
+    intervalId = setInterval(() => {
+        minutes = parseInt(duration / 60, 10);
+        seconds = parseInt(duration % 60, 10);
+
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+
+        isIntervalRunning = true;
+        countdown.textContent = prefix + minutes + ":" + seconds;
+        document.title = minutes + ":" + seconds;
+        progress = ((initialDuration - duration) * 100) / initialDuration;
+        const progressBar = document.getElementById(
+            `timer-${timers[index].title}`
+        );
+        const activeBar = document.getElementById(
+            `timer-${timers[index].title}-active`
+        );
+        progressBar.value = progress;
+        activeBar.value = progress;
+
+        if (--duration < 0) {
+            clearInterval(intervalId);
+            isIntervalRunning = false;
+            if (timer.alert) {
+                sendNotification(
+                    timer.title,
+                    "Your timer countdown has finished!"
+                );
+            }
+
+            startCounting(timers, index + 1);
+        }
+    }, 1000);
+};
+
+const handleImportFile = (event) => {
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function ({ target }) {
+        const { result } = target;
+        localStorage.setItem("sets", result);
+
+        const sets = JSON.parse(result);
+        initializeSets(sets);
+    };
+
+    reader.readAsText(file);
+};
+
+const exportSetsToFile = () => {
+    const storedSetsString = localStorage.getItem("sets");
+    if (!storedSetsString) return;
+
+    const blob = new Blob([storedSetsString], { type: "application/json" });
+    const downloadLink = document.createElement("a");
+
+    downloadLink.href = URL.createObjectURL(blob);
+    downloadLink.download = "my-sets.json";
+
+    downloadLink.click();
+
+    window.setTimeout(() => URL.revokeObjectURL(downloadLink.href), 10 * 1000);
+};
+
+const createProgressBar = (max, title) => {
+    const progress = document.createElement("progress");
+    progress.className = "progress";
+    progress.value = 0;
+    progress.max = max;
+    progress.id = `timer-${title}`;
+    return progress;
 };
 
 const createLabel = (text) => {
@@ -74,15 +154,7 @@ const createLabel = (text) => {
     return label;
 };
 
-const createTimeInput = (isScheduled, scheduledTime) => {
-    const inputField = document.createElement("input");
-    inputField.className = "input-field";
-    inputField.type = "time";
-    inputField.value = isScheduled ? scheduledTime : "";
-    return inputField;
-};
-
-const createDurationPicker = () => {
+const createDurationPicker = (time) => {
     const picker = document.createElement("input");
     picker.type = "text";
 
@@ -184,7 +256,7 @@ const createDurationPicker = () => {
         event.target.value = sectioned.join(":");
     };
 
-    picker.value = "000:00:00";
+    picker.value = time ? time : "000:00:00";
     picker.style.textAlign = "right"; //align the values to the right (optional)
     picker.addEventListener("keydown", (event) => {
         //use arrow keys to increase value;
@@ -213,15 +285,14 @@ const createDurationPicker = () => {
     return picker;
 };
 
-const getAdjacentTimerTitle = (timers, index) => {
-    return timers[index]?.title;
-};
-
 const createNavigationButton = (timers, index) => {
     const btn = document.createElement("button");
-    btn.textContent = getAdjacentTimerTitle(timers, index) || "None";
-    btn.disabled = !getAdjacentTimerTitle(timers, index);
-    btn.onclick = () => createActiveTimer(timers, index);
+    btn.textContent = timers[index]?.title || "None";
+    btn.disabled = !timers[index]?.title;
+    btn.onclick = () => {
+        createActiveTimer(timers, index);
+        startCounting(timers, index);
+    };
     return btn;
 };
 
@@ -233,16 +304,18 @@ const createScheduleButton = (setData) => {
         scheduleBtn.textContent = setData.scheduled
             ? "Scheduled"
             : "Not scheduled";
-        const timeDiv =
-            scheduleBtn.parentElement.querySelector("div:nth-child(2)");
-        timeDiv.textContent = setData.scheduled
-            ? setData.time
-            : "Not scheduled";
+
+        if (setData.scheduled) return;
+
+        setData.time = null;
+        initializeSets(sets);
+        localStorage.setItem("sets", JSON.stringify(sets));
     });
     return scheduleBtn;
 };
 
 const createActiveTimer = (timers, index) => {
+    if (!timers[index]) return;
     const timer = document.getElementById("active-timer");
     timer.textContent = "";
 
@@ -266,7 +339,7 @@ const createActiveTimerHeader = (timerData) => {
     titleDiv.textContent = timerData.title;
 
     const timeDiv = document.createElement("div");
-    timeDiv.textContent = timerData.time + " min";
+    timeDiv.textContent = timerData.time;
 
     header.appendChild(titleDiv);
     header.appendChild(timeDiv);
@@ -279,18 +352,35 @@ const createActiveTimerBody = (timers, index) => {
     const controlDiv = document.createElement("div");
     controlDiv.className = "control-div";
 
-    const progress = createProgressBar(10, 100);
-    const alertBox = createCheckbox();
+    const progress = createProgressBar(100, timers[index].title + "-active");
+    const alertBox = document.createElement("input");
+    alertBox.setAttribute("type", "checkbox");
+    alertBox.checked = timers[index].alert;
+    alertBox.onclick = () => {
+        timers[index].alert = alertBox.checked;
+        localStorage.setItem("sets", JSON.stringify(sets));
+    };
 
-    const inputField = createDurationPicker();
+    const inputField = createDurationPicker(timers[index].time);
     const saveBtn = document.createElement("button");
     saveBtn.textContent = "Save";
+    saveBtn.onclick = () => {
+        timers[index].time = inputField.value;
+        initializeTimers(timers);
+        localStorage.setItem("sets", JSON.stringify(sets));
+    };
 
-    const prevBtn = createNavigationButton(timers, index - 1);
-    const nextBtn = createNavigationButton(timers, index + 1);
+    const prevBtn = createNavigationButton(timers, index - 1, progress);
+    const nextBtn = createNavigationButton(timers, index + 1, progress);
 
     const stopBtn = document.createElement("button");
     stopBtn.textContent = "▣";
+    stopBtn.onclick = () => {
+        clearInterval(intervalId);
+        countdown.textContent = "";
+        document.title = "Scheduler";
+    };
+
     const pauseBtn = document.createElement("button");
     pauseBtn.textContent = "||";
     const removeTimeBtn = document.createElement("button");
@@ -328,15 +418,13 @@ const createTimer = (timers, index) => {
     timer.classList.add("timer");
     timer.draggable = true;
 
-    const header = createTimerHeader(timers[index]);
-    const body = createTimerBody(timers[index]);
+    const header = createTimerHeader(timers, index);
+    const body = createTimerBody(timers, index);
 
     header.addEventListener("click", () => {
         body.style.maxHeight = body.style.maxHeight
             ? null
             : body.scrollHeight + "px";
-
-        createActiveTimer(timers, index);
     });
 
     timer.appendChild(header);
@@ -348,15 +436,33 @@ const createTimer = (timers, index) => {
     return timer;
 };
 
-const createTimerHeader = (timerData) => {
+const createTimerHeader = (timers, index) => {
+    const timerData = timers[index];
     const header = document.createElement("div");
     header.classList.add("header");
 
     const titleDiv = document.createElement("div");
     titleDiv.textContent = timerData.title;
+    titleDiv.onclick = () => {
+        titleDiv.contentEditable = true;
+        titleDiv.focus(); // Set focus for immediate editing
+    };
+
+    titleDiv.onkeydown = (event) => {
+        if (event.key !== "Enter") return;
+
+        const newTitle = titleDiv.textContent.trim();
+        titleDiv.contentEditable = false;
+
+        const setIndex = sets.findIndex(
+            (set) => set.title === currentSet.innerText
+        );
+        sets[setIndex].timers[index].title = newTitle;
+        localStorage.setItem("sets", JSON.stringify(sets));
+    };
 
     const timeDiv = document.createElement("div");
-    timeDiv.textContent = timerData.time + " min";
+    timeDiv.textContent = timerData.time;
 
     header.appendChild(titleDiv);
     header.appendChild(timeDiv);
@@ -364,19 +470,42 @@ const createTimerHeader = (timerData) => {
     return header;
 };
 
-const createTimerBody = (timerData) => {
+const createTimerBody = (timers, index) => {
     const body = document.createElement("div");
     body.classList.add("body");
 
-    const progress = createProgressBar(10, 100);
-    const alertBox = createCheckbox();
-    const inputField = createTimeInput(timerData.scheduled, timerData.time);
+    const progress = createProgressBar(100, timers[index].title);
+    const alertBox = document.createElement("input");
+    alertBox.setAttribute("type", "checkbox");
+    alertBox.checked = timers[index].alert;
+    alertBox.onclick = () => {
+        timers[index].alert = alertBox.checked;
+        localStorage.setItem("sets", JSON.stringify(sets));
+    };
+    const inputField = createDurationPicker(timers[index].time);
     const saveBtn = document.createElement("button");
     saveBtn.textContent = "Save";
+    saveBtn.onclick = () => {
+        timers[index].time = inputField.value;
+        initializeTimers(timers);
+        localStorage.setItem("sets", JSON.stringify(sets));
+    };
+
     const startBtn = document.createElement("button");
     startBtn.textContent = "Start";
+    startBtn.onclick = () => startCounting(timers, index);
+
     const deleteBtn = document.createElement("button");
     deleteBtn.textContent = "Delete";
+    deleteBtn.onclick = () => {
+        const targetSetIndex = sets.findIndex(
+            (set) => set.title === currentSet.innerText
+        );
+        sets[targetSetIndex].timers.splice(index, 1);
+
+        initializeTimers(timers);
+        localStorage.setItem("sets", JSON.stringify(sets));
+    };
 
     body.appendChild(progress);
     body.appendChild(alertBox);
@@ -389,25 +518,22 @@ const createTimerBody = (timerData) => {
     return body;
 };
 
-const createSet = (setData) => {
+const createSet = (sets, index) => {
     const set = document.createElement("li");
     set.classList.add("set");
     set.draggable = true;
 
-    const header = createSetHeader(setData);
-    const body = createSetBody(setData);
+    const header = createSetHeader(sets, index);
+    const body = createSetBody(sets, index);
 
     header.addEventListener("click", () => {
         body.style.maxHeight = body.style.maxHeight
             ? null
             : body.scrollHeight + "px";
 
-        const { timers } = setData;
-        const timerUL = timersList.querySelector("ul");
-        timerUL.innerHTML = "";
-        timers.forEach((_, index) =>
-            timerUL.appendChild(createTimer(timers, index))
-        );
+        const { timers } = sets[index];
+        currentSet.innerText = sets[index].title;
+        initializeTimers(timers);
     });
 
     set.appendChild(header);
@@ -416,12 +542,27 @@ const createSet = (setData) => {
     return set;
 };
 
-const createSetHeader = (setData) => {
+const createSetHeader = (sets, index) => {
+    const setData = sets[index];
     const header = document.createElement("div");
     header.classList.add("header");
 
     const titleDiv = document.createElement("div");
     titleDiv.textContent = setData.title;
+    titleDiv.onclick = () => {
+        titleDiv.contentEditable = true;
+        titleDiv.focus(); // Set focus for immediate editing
+    };
+
+    titleDiv.onkeydown = (event) => {
+        if (event.key !== "Enter") return;
+
+        const newTitle = titleDiv.textContent.trim();
+        titleDiv.contentEditable = false;
+
+        sets[index].title = newTitle;
+        localStorage.setItem("sets", JSON.stringify(sets));
+    };
 
     const timeDiv = document.createElement("div");
     timeDiv.textContent = setData.scheduled ? setData.time : "Not scheduled";
@@ -432,15 +573,37 @@ const createSetHeader = (setData) => {
     return header;
 };
 
-const createSetBody = (setData) => {
+const createSetBody = (sets, index) => {
+    const setData = sets[index];
     const body = document.createElement("div");
     body.classList.add("body");
 
-    const progress = createProgressBar(10, 100);
-    const inputField = createTimeInput(setData.scheduled, setData.time);
+    const progress = createProgressBar(100, setData.title);
+    const inputField = document.createElement("input");
+    inputField.className = "input-field";
+    inputField.type = "time";
+    inputField.value = setData.scheduled ? setData.time : "";
+
+    inputField.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            const enteredTime = inputField.value;
+            sets[index].time = enteredTime;
+            sets[index].scheduled = true;
+            console.log(sets);
+            initializeSets(sets);
+            localStorage.setItem("sets", JSON.stringify(sets));
+        }
+    });
+
     const scheduleBtn = createScheduleButton(setData);
     const deleteButton = document.createElement("button");
     deleteButton.textContent = "Delete";
+    deleteButton.onclick = () => {
+        sets.splice(index, 1);
+
+        initializeSets(sets);
+        localStorage.setItem("sets", JSON.stringify(sets));
+    };
 
     body.appendChild(progress);
     body.appendChild(inputField);
@@ -451,17 +614,26 @@ const createSetBody = (setData) => {
 };
 
 // Populate list items for sets and timers
-sets.forEach((setData) =>
-    setsList.querySelector("ul").appendChild(createSet(setData))
-);
+initializeSets(sets);
 
-const { timers } = sets[0];
-timers.forEach((_, index) =>
-    timersList.querySelector("ul").appendChild(createTimer(timers, index))
-);
+if (sets.length > 0) {
+    const { timers } = sets[0];
+    currentSet.innerText = sets[0].title;
+    initializeTimers(timers);
+    createActiveTimer(timers, 0);
+}
 
-const activeTimer = timers[0];
-createActiveTimer(timers, 0);
+const importFileInput = document.getElementById("import-btn");
+importFileInput.addEventListener("change", handleImportFile);
+
+const exportButton = document.getElementById("export-btn");
+exportButton.addEventListener("click", exportSetsToFile);
+
+const addSetButton = document.getElementById("add-set-btn");
+addSetButton.addEventListener("click", addNewSet);
+
+const addTimerButton = document.getElementById("add-timer-btn");
+addTimerButton.addEventListener("click", addNewTimer);
 
 // --------------------------------------------------------------
 // ---------------- Drag and Drop functionality -----------------
@@ -469,7 +641,6 @@ createActiveTimer(timers, 0);
 
 let draggedItem = null;
 
-// Create and return a newly ordered list
 const getDragAfterElement = (container, y) => {
     const draggableElements = [
         ...container.querySelectorAll("li:not(.dragging)"),
@@ -497,8 +668,74 @@ const handleDragStart = (event) => {
     }, 0);
 };
 
+let orderOfArrays = [];
+
 const handleDragEnd = (event) => {
     setTimeout(() => {
+        if (event.target.className == "set") {
+            const ulElement = document.getElementById("sets");
+            const listItems = ulElement.querySelectorAll("li");
+
+            for (const listItem of listItems) {
+                const headerDiv = listItem.querySelector(
+                    ".header div:first-child"
+                );
+
+                if (headerDiv) {
+                    const textContent = headerDiv.textContent.trim();
+                    orderOfArrays.push(textContent);
+                    if (orderOfArrays.length == listItems.length) {
+                        const orderedSets = orderOfArrays.reduce(
+                            (acc, currentTitle) => {
+                                const matchingSet = sets.find(
+                                    (set) => set.title === currentTitle
+                                );
+                                acc.push(matchingSet);
+                                return acc;
+                            },
+                            []
+                        );
+                        localStorage.setItem(
+                            "sets",
+                            JSON.stringify(orderedSets)
+                        );
+                        orderOfArrays = [];
+                    }
+                }
+            }
+        } else {
+            const ulElement = document.getElementById("timers");
+            const listItems = ulElement.querySelectorAll("li");
+            for (const listItem of listItems) {
+                const headerDiv = listItem.querySelector(
+                    ".header div:first-child"
+                );
+
+                if (headerDiv) {
+                    const textContent = headerDiv.textContent.trim();
+                    orderOfArrays.push(textContent);
+                    if (orderOfArrays.length == listItems.length) {
+                        const targetSetIndex = sets.findIndex(
+                            (set) => set.title === currentSet.innerText
+                        );
+                        const { timers } = sets[targetSetIndex];
+                        const orderedTimers = orderOfArrays.reduce(
+                            (acc, currentTitle) => {
+                                const matchingSet = timers.find(
+                                    (timer) => timer.title === currentTitle
+                                );
+                                acc.push(matchingSet);
+                                return acc;
+                            },
+                            []
+                        );
+                        sets[targetSetIndex].timers = orderedTimers;
+                        localStorage.setItem("sets", JSON.stringify(sets));
+                        orderOfArrays = [];
+                    }
+                }
+            }
+        }
         event.target.style.display = "";
         draggedItem = null;
     }, 0);
@@ -533,3 +770,30 @@ draggableTimers.addEventListener("dragend", handleDragEnd);
 draggableTimers.addEventListener("dragover", (e) =>
     handleDragOver(e, draggableTimers)
 );
+
+function requestNotificationPermission() {
+    if (!Notification.permission) return;
+
+    Notification.requestPermission().then((permission) => {
+        if (permission === "granted")
+            console.log("Notification permission granted!");
+        else console.log("Notification permission denied.");
+    });
+}
+
+requestNotificationPermission();
+
+function sendNotification(title, body, icon = "") {
+    if (Notification.permission === "granted") {
+        const notification = new Notification(title, {
+            body: body,
+            icon: icon,
+        });
+
+        notification.onclick = () => {
+            window.open(window.location.href);
+        };
+    } else {
+        console.log("Notification permission not granted.");
+    }
+}

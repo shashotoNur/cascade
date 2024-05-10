@@ -14,9 +14,10 @@
 	<body>
 		<header class="navbar">
 			<h1 class="title">Scheduler</h1>
+			<h3 id="countdown"></h3>
 			<div class="utilities">
-				<button>In</button>
-				<button>Out</button>
+				<input type="file" id="import-btn" accept=".json" />
+				<button id="export-btn">Out</button>
 				<button>Sync</button>
 			</div>
 		</header>
@@ -25,7 +26,7 @@
 			<section class="column draggable-list" id="sets-list">
 				<h1>Sets</h1>
 				<div class="button-container">
-					<button class="add">Add</button>
+					<button id="add-set-btn">+</button>
 				</div>
 				<ul id="sets">
 				</ul>
@@ -33,8 +34,9 @@
 			<section class="column draggable-list" id="timers-list">
 				<h1>Timers</h1>
 				<div class="timer-set-header">
-					<h2>Set Name</h2>
-					<button class="add">Add</button>
+					<h3 id="current-set"></h3>
+					<div class="button-container">
+					<button id="add-timer-btn">+</button></div>
 				</div>
 				<ul id="timers">
 				</ul>

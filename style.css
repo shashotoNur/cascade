@@ -130,7 +130,7 @@ h1 {
 	background-color: #fff;
 }
 
-button {
+button, #import-btn {
 	-webkit-appearance: none;
 	appearance: none;
 	border: none;
@@ -146,7 +146,7 @@ button {
 	transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
 }
 
-button:hover {
+button:hover, #import-btn:hover {
 	background-color: #111;
 	transform: scale(1.02);
 }
