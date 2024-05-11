@@ -4,16 +4,21 @@
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="description" content="A web based multi-stage scheduler app.">
 
-		<title>Scheduler</title>
+		<title>Cascade</title>
 
-		<link rel="stylesheet" href="style.css">
+		<link defer rel="stylesheet" href="styles.css">
+		<link rel="icon" type="image/x-icon" href="public/icons/favicon.ico">
 		<script defer src="script.js"></script>
 	</head>
 
 	<body>
 		<header class="navbar">
-			<h1 class="title">Scheduler</h1>
+			<div id="navbar-header">
+				<img src="public/icons/android-chrome-192x192.png" alt="Cascade Logo">&nbsp;&nbsp;
+				<h1 id="title">Cascade</h1>
+			</div>
 			<h3 id="countdown"></h3>
 			<div class="utilities">
 				<input type="file" id="import-btn" accept=".json" />
@@ -37,7 +42,8 @@
 				<div class="timer-set-header">
 					<h3 id="current-set"></h3>
 					<div class="button-container">
-					<button id="add-timer-btn">+</button></div>
+						<button id="add-timer-btn">+</button>
+					</div>
 				</div>
 				<ul id="timers">
 				</ul>
@@ -47,6 +53,169 @@
 				<div id="active-timer"></div>
 			</section>
 		</main>
+
+		<div id="modal" class="hidden">
+			<header>
+				<h1>Cascade</h1>
+				<button id="close-button">&times;</button>
+			</header>
+			<section>
+				<h3>Codebase</h3>
+
+				<p>The code is hosted on <a href="https://github.com/shashotoNur/cascade">github.</a> Take a look at the
+					readme for more information.</p>
+			</section>
+			<hr>
+			<section id="introduction">
+				<h3>Introduction</h3>
+
+				<p>Introducing Cascade, your FOSS, one-stop solution for conquering time and accomplishing tasks
+					efficiently.</p>
+
+				<p>Cascade empowers you to take control of your time with its innovative multi-stage timer system.
+					Create sets of interconnected timers, schedule them for specific moments, and break down complex
+					tasks into manageable steps. Use it from anywhere though the web.</p>
+			</section>
+			<hr>
+			<section id="usage-guide">
+				<h3>Usage Guide</h3>
+				<h4>Creating Sets and Timers</h4>
+
+				<ol>
+					<li>
+						Click the <strong>+</strong> symbol in the "Sets" column to create a new set.
+					</li>
+					<li>
+						Give your set a descriptive name by clicking on the default name and typing your desired name.
+					</li>
+					<li>
+						Timers cannot exist outside of sets. Click the <strong>+</strong> symbol in the "Timers" column
+						within a specific set to create a new timer.
+					</li>
+					<li>
+						Assign a duration (e.g., 25 minutes) to your timer by clicking on the white box and entering the
+						desired time. Click "Save" to confirm.
+					</li>
+				</ol>
+
+				<h4>Scheduling Sets</h4>
+
+				<ol>
+					<li>
+						Click on the white box next to "Not scheduled" in the set you want to schedule.
+					</li>
+					<li>
+						Enter the desired start time for the set using the time input format.
+					</li>
+					<li>
+						Click the "Not scheduled" button again to toggle it to "Scheduled". The set will now activate at
+						the designated time.
+					</li>
+				</ol>
+
+				<h4>Editing and Managing Timers and Sets</h4>
+
+				<ul>
+					<li>
+						<strong>Renaming:</strong> Click directly on the current name of a set or timer and type the
+						desired new name.
+					</li>
+					<li>
+						<strong>Alerts:</strong> Check the box next to "Alert" for a timer to ensure you receive a
+						notification when it finishes.
+					</li>
+					<li>
+						<strong>Deleting:</strong> Click the delete icon next to a set or timer to remove it completely.
+					</li>
+				</ul>
+
+				<h4>Running Timers</h4>
+
+				<ol>
+					<li>
+						Click the "Start" button next to the timer you want to run.
+					</li>
+					<li>
+						The timer will move to the "Active Timer" column and begin counting down.
+					</li>
+				</ol>
+
+				<h4>Working with Active Timers</h4>
+
+				<ul>
+					<li>
+						<strong>Pause/Resume:</strong> Click the "Pause" or "Resume" button to control the timer's
+						progress.
+					</li>
+					<li>
+						<strong>Stop:</strong> Click the "Stop" button to completely end the timer and remove it from
+						the "Active Timer" column.
+					</li>
+					<li>
+						<strong>Editing:</strong> Click on the timer within the "Active Timer" column to adjust its
+						duration or other settings.
+					</li>
+					<li>
+						<strong>Skipping:</strong> Use the "Previous" and "Next" buttons (if available) to navigate
+						between timers within the active set.
+					</li>
+					<li>
+						<strong>Adjusting Time:</strong> Click the white box next to the current timer duration and
+						adjust the value to add or remove time from the ongoing execution. Click "Save" to confirm the
+						change.
+					</li>
+				</ul>
+
+				<h4>Reordering and Data Management</h4>
+
+				<p>
+					Drag and drop sets and timers within their respective columns to rearrange them according to your
+					preference. Access the export and import functions from the navbar to save and load your data sets.
+				</p>
+
+				<h4>Launching Scheduled Sets</h4>
+
+				<p>
+					Click the "Sync" button in the navbar to instantly launch any set that is scheduled for the current
+					time.
+				</p>
+
+				<h4>App Information</h4>
+
+				<p>
+					Click on the app title to open a modal displaying details about the app.
+				</p>
+
+				<p>
+					Remember: Timers require a set for creation. Get organized and productive with Cascade!
+				</p>
+			</section>
+			<hr>
+			<section id="license-section">
+				<h3 id="license-header">Under MIT License</h3>
+				<div id="license-text" class="hidden">
+					<p>MIT License</p>
+
+					<p>Copyright (c) 2024 Shashoto Nur</p>
+
+					<p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+						associated documentation files (the "Software"), to deal in the Software without restriction,
+						including without limitation the rights to use, copy, modify, merge, publish, distribute,
+						sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+						furnished to do so, subject to the following conditions:</p>
+
+					<p>The above copyright notice and this permission notice shall be included in all copies or
+						substantial portions of the Software.</p>
+
+					<p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+						NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+						NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+						CLAIM,DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+						FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+					</p>
+				</div>
+			</section>
+		</div>
 
 	</body>
 

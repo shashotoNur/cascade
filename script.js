@@ -1,35 +1,11 @@
-const setsList = document.getElementById("sets-list");
-const timersList = document.getElementById("timers-list");
-const currentSet = document.getElementById("current-set");
-const countdownDisplay = document.getElementById("countdown");
-const syncBtn = document.getElementById("sync-btn");
-const importBtn = document.getElementById("import-btn");
-const importBtnProxy = document.getElementById("import-btn-proxy");
-
-importBtnProxy.onclick = () => importBtn.click();
-
-const setsString = localStorage.getItem("sets");
-const sets = setsString ? JSON.parse(setsString) : [];
-
-let intervalId,
-    duration = 0;
-syncBtn.onclick = () => {
-    clearInterval(intervalId);
-
-    const now = new Date();
-    const currentTime =
-        now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-    findAndStartTimer(sets, currentTime);
-};
-
-function hasTitle(array, title) {
+const hasTitle = (array, title) => {
     for (const object of array) {
         if (object.title === title) {
             return true;
         }
     }
     return false;
-}
+};
 
 const initializeSets = (sets) => {
     setsList.querySelector("ul").innerHTML = "";
@@ -66,18 +42,25 @@ const addNewSet = () => {
     initializeSets(sets);
 
     localStorage.setItem("sets", JSON.stringify(sets));
+
+    const newSetHeader = document.getElementById(
+        "id-" + newSet.title.replace(" ", "-") + "-header"
+    );
+    newSetHeader.click();
 };
 
 const addNewTimer = () => {
     const newTimer = {
         title: "New Timer",
-        time: "",
+        time: "000:00:00",
         alert: false,
     };
 
     const targetSetIndex = sets.findIndex(
         (set) => set.title === currentSet.innerText
     );
+
+    if (targetSetIndex == -1) return console.log("No set matches");
 
     const { timers } = sets[targetSetIndex];
 
@@ -95,12 +78,22 @@ const addNewTimer = () => {
     localStorage.setItem("sets", JSON.stringify(sets));
 };
 
+const truncateString = (str, maxLength = 32) => {
+    return str.length > maxLength ? str.slice(0, maxLength - 3) + "..." : str;
+};
+
 const startCounting = (timers, index, partialStart = false, setTitle) => {
     clearInterval(intervalId);
     const timer = timers[index];
+
+    const setProgressBar = document.getElementById(
+        `set-${setTitle.replace(" ", "-")}`
+    );
+
     if (!timer) {
+        setProgressBar.value = 0;
         countdownDisplay.textContent = "";
-        document.title = "Scheduler";
+        document.title = "Cascade";
         return;
     }
     createActiveTimer(timers, index, setTitle);
@@ -122,7 +115,7 @@ const startCounting = (timers, index, partialStart = false, setTitle) => {
     });
 
     const initialDuration = duration;
-    intervalId = setInterval(function recurse() {
+    function recurse() {
         minutes = parseInt(duration / 60, 10);
         seconds = parseInt(duration % 60, 10);
 
@@ -131,25 +124,30 @@ const startCounting = (timers, index, partialStart = false, setTitle) => {
 
         countdownDisplay.textContent = prefix + minutes + ":" + seconds;
         document.title = minutes + ":" + seconds;
-        const progress = ((initialDuration - duration) * 100) / initialDuration;
+
         const progressBar = document.getElementById(
             `timer-${timers[index].title.replace(" ", "-")}`
         );
         const activeBar = document.getElementById(
             `timer-${timers[index].title.replace(" ", "-")}-active`
         );
-        if (progressBar) progressBar.value = progress;
-        activeBar.value = progress;
+        if (initialDuration > 0) {
+            const progress =
+                ((initialDuration - duration) * 100) / initialDuration;
+            if (progressBar) progressBar.value = progress;
+            activeBar.value = progress;
 
+            const setProgress = (completedDuration * 100) / totalSetTime;
+            if (setProgressBar) setProgressBar.value = setProgress;
+        }
         completedDuration += 1;
-        const setProgress = (completedDuration * 100) / totalSetTime;
-        const setProgressBar = document.getElementById(
-            `set-${setTitle.replace(" ", "-")}`
-        );
-        if (setProgressBar) setProgressBar.value = setProgress;
 
         if (--duration < 0) {
             clearInterval(intervalId);
+
+            if (progressBar) progressBar.value = 0;
+            activeBar.value = 0;
+
             if (timer.alert) {
                 sendNotification(
                     timer.title,
@@ -159,8 +157,9 @@ const startCounting = (timers, index, partialStart = false, setTitle) => {
 
             startCounting(timers, index + 1, false, setTitle);
         }
-        return recurse;
-    }, 1000);
+    }
+    recurse();
+    intervalId = setInterval(recurse, 1000);
 };
 
 const handleImportFile = (event) => {
@@ -228,17 +227,18 @@ const createDurationPicker = (time) => {
         const cursorPosition = event.target.selectionStart;
         const hourMarker = event.target.value.indexOf(":");
         const minuteMarker = event.target.value.lastIndexOf(":");
-        if (hourMarker < 0 || minuteMarker < 0) {
-            return;
-        }
+        if (hourMarker < 0 || minuteMarker < 0) return;
+
         if (cursorPosition < hourMarker) {
             event.target.selectionStart = 0;
             event.target.selectionEnd = hourMarker;
         }
+
         if (cursorPosition > hourMarker && cursorPosition < minuteMarker) {
             event.target.selectionStart = hourMarker + 1;
             event.target.selectionEnd = minuteMarker;
         }
+
         if (cursorPosition > minuteMarker) {
             event.target.selectionStart = minuteMarker + 1;
             event.target.selectionEnd = minuteMarker + 3;
@@ -250,6 +250,7 @@ const createDurationPicker = (time) => {
         secondsValue %= 3600;
         let minutes = Math.floor(secondsValue / 60);
         let seconds = secondsValue % 60;
+
         minutes = String(minutes).padStart(2, "0");
         hours = String(hours).padStart(3, "0");
         seconds = String(seconds).padStart(2, "0");
@@ -260,6 +261,7 @@ const createDurationPicker = (time) => {
         const rawValue = inputBox.value;
         sectioned = rawValue.split(":");
         let secondsValue = 0;
+
         if (sectioned.length === 3) {
             secondsValue =
                 Number(sectioned[2]) +
@@ -281,9 +283,8 @@ const createDurationPicker = (time) => {
                 Number(sectioned[0] * 60 * 60);
         }
         secondsValue -= 1;
-        if (secondsValue < 0) {
-            secondsValue = 0;
-        }
+        if (secondsValue < 0) secondsValue = 0;
+
         insertFormatted(inputBox, secondsValue);
     };
 
@@ -293,21 +294,16 @@ const createDurationPicker = (time) => {
             event.target.value = "000:00:00";
             return;
         }
-        if (isNaN(sectioned[0])) {
-            sectioned[0] = "000";
-        }
-        if (isNaN(sectioned[1]) || sectioned[1] < 0) {
-            sectioned[1] = "00";
-        }
-        if (sectioned[1] > 59 || sectioned[1].length > 2) {
-            sectioned[1] = "59";
-        }
-        if (isNaN(sectioned[2]) || sectioned[2] < 0) {
-            sectioned[2] = "00";
-        }
-        if (sectioned[2] > 59 || sectioned[2].length > 2) {
-            sectioned[2] = "59";
-        }
+        if (isNaN(sectioned[0])) sectioned[0] = "000";
+
+        if (isNaN(sectioned[1]) || sectioned[1] < 0) sectioned[1] = "00";
+
+        if (sectioned[1] > 59 || sectioned[1].length > 2) sectioned[1] = "59";
+
+        if (isNaN(sectioned[2]) || sectioned[2] < 0) sectioned[2] = "00";
+
+        if (sectioned[2] > 59 || sectioned[2].length > 2) sectioned[2] = "59";
+
         event.target.value = sectioned.join(":");
     };
 
@@ -315,12 +311,10 @@ const createDurationPicker = (time) => {
     picker.style.textAlign = "right";
     picker.addEventListener("keydown", (event) => {
         if (event.key == "ArrowDown" || event.key == "ArrowUp") {
-            if (event.key == "ArrowDown") {
-                decreaseValue(event.target);
-            }
-            if (event.key == "ArrowUp") {
-                increaseValue(event.target);
-            }
+            if (event.key == "ArrowDown") decreaseValue(event.target);
+
+            if (event.key == "ArrowUp") increaseValue(event.target);
+
             event.preventDefault();
         }
 
@@ -388,7 +382,7 @@ const createActiveTimerHeader = (timerData) => {
     header.className = "header";
 
     const titleDiv = document.createElement("div");
-    titleDiv.textContent = timerData.title;
+    titleDiv.textContent = truncateString(timerData.title);
 
     const timeDiv = document.createElement("div");
     timeDiv.textContent = timerData.time;
@@ -437,7 +431,7 @@ const createActiveTimerBody = (timers, index, setTitle) => {
     stopBtn.onclick = () => {
         clearInterval(intervalId);
         countdownDisplay.textContent = "";
-        document.title = "Scheduler";
+        document.title = "Cascade";
     };
 
     const pauseBtn = document.createElement("button");
@@ -538,7 +532,7 @@ const createTimerHeader = (timers, index) => {
     header.classList.add("header");
 
     const titleDiv = document.createElement("div");
-    titleDiv.textContent = timerData.title;
+    titleDiv.textContent = truncateString(timerData.title);
     titleDiv.onclick = () => {
         titleDiv.contentEditable = true;
         titleDiv.focus();
@@ -547,12 +541,15 @@ const createTimerHeader = (timers, index) => {
     titleDiv.onkeydown = (event) => {
         if (event.key !== "Enter") return;
 
-        let newTitle = titleDiv.textContent.trim();
+        const newTitle = titleDiv.textContent.trim();
+        titleDiv.contentEditable = false;
 
         const titleExists = hasTitle(timers, newTitle);
-        if (titleExists) newTitle = timerData.title;
-
-        titleDiv.contentEditable = false;
+        if (titleExists) {
+            countdownDisplay.textContent = "Name already exists!";
+            setTimeout(() => (countdownDisplay.textContent = ""), 3000);
+            return (titleDiv.textContent = truncateString(timerData.title));
+        }
 
         const setIndex = sets.findIndex(
             (set) => set.title === currentSet.innerText
@@ -658,9 +655,10 @@ const createSetHeader = (sets, index) => {
     const setData = sets[index];
     const header = document.createElement("div");
     header.classList.add("header");
+    header.id = "id-" + sets[index].title.replace(" ", "-") + "-header";
 
     const titleDiv = document.createElement("div");
-    titleDiv.textContent = setData.title;
+    titleDiv.textContent = truncateString(setData.title);
     titleDiv.onclick = () => {
         titleDiv.contentEditable = true;
         titleDiv.focus();
@@ -669,12 +667,15 @@ const createSetHeader = (sets, index) => {
     titleDiv.onkeydown = (event) => {
         if (event.key !== "Enter") return;
 
-        let newTitle = titleDiv.textContent.trim();
-
-        const setExists = hasTitle(sets, newTitle);
-        if (setExists) newTitle = setData.title;
-
+        const newTitle = titleDiv.textContent.trim();
         titleDiv.contentEditable = false;
+
+        const titleExists = hasTitle(sets, newTitle);
+        if (titleExists) {
+            countdownDisplay.textContent = "Name already exists!";
+            setTimeout(() => (countdownDisplay.textContent = ""), 3000);
+            return (titleDiv.textContent = truncateString(setData.title));
+        }
 
         sets[index].title = newTitle;
         localStorage.setItem("sets", JSON.stringify(sets));
@@ -721,6 +722,12 @@ const createSetBody = (sets, index) => {
 
         initializeSets(sets);
         localStorage.setItem("sets", JSON.stringify(sets));
+
+        if (currentSet.textContent == setData.title) {
+            if (sets[0]) initializeTimers(sets[0].timers, sets[0].title);
+            else initializeSets([], "");
+            currentSet.textContent = sets[0] ? sets[0].title : "";
+        }
     };
 
     body.appendChild(progress);
@@ -730,20 +737,6 @@ const createSetBody = (sets, index) => {
 
     return body;
 };
-
-const importFileInput = document.getElementById("import-btn");
-importFileInput.addEventListener("change", handleImportFile);
-
-const exportButton = document.getElementById("export-btn");
-exportButton.addEventListener("click", exportSetsToFile);
-
-const addSetButton = document.getElementById("add-set-btn");
-addSetButton.addEventListener("click", addNewSet);
-
-const addTimerButton = document.getElementById("add-timer-btn");
-addTimerButton.addEventListener("click", addNewTimer);
-
-let draggedItem = null;
 
 const getDragAfterElement = (container, y) => {
     const draggableElements = [
@@ -771,8 +764,6 @@ const handleDragStart = (event) => {
         event.target.style.display = "none";
     }, 0);
 };
-
-let orderOfArrays = [];
 
 const handleDragEnd = (event) => {
     setTimeout(() => {
@@ -859,23 +850,7 @@ const expandItem = ({ target }) => {
     target.appendChild(detailDiv);
 };
 
-const draggableSets = document.getElementById("sets");
-
-draggableSets.addEventListener("dragstart", handleDragStart);
-draggableSets.addEventListener("dragend", handleDragEnd);
-draggableSets.addEventListener("dragover", (e) =>
-    handleDragOver(e, draggableSets)
-);
-
-const draggableTimers = document.getElementById("timers");
-
-draggableTimers.addEventListener("dragstart", handleDragStart);
-draggableTimers.addEventListener("dragend", handleDragEnd);
-draggableTimers.addEventListener("dragover", (e) =>
-    handleDragOver(e, draggableTimers)
-);
-
-function requestNotificationPermission() {
+const requestNotificationPermission = () => {
     if (!Notification.permission) return;
 
     Notification.requestPermission().then((permission) => {
@@ -883,9 +858,9 @@ function requestNotificationPermission() {
             console.log("Notification permission granted!");
         else console.log("Notification permission denied.");
     });
-}
+};
 
-function sendNotification(title, body, icon = "") {
+const sendNotification = (title, body, icon = "") => {
     if (Notification.permission === "granted") {
         const notification = new Notification(title, {
             body: body,
@@ -898,18 +873,9 @@ function sendNotification(title, body, icon = "") {
     } else {
         console.log("Notification permission not granted.");
     }
-}
+};
 
-if (sets.length > 0) {
-    initializeSets(sets);
-    const { timers } = sets[0];
-    currentSet.innerText = sets[0].title;
-    initializeTimers(timers, sets[0].title);
-    createActiveTimer(timers, 0, sets[0].title);
-    requestNotificationPermission();
-}
-
-function findAndStartTimer(sets, currentTime) {
+const findAndStartTimer = (sets, currentTime) => {
     for (const set of sets) {
         if (!set.time) set.time = "00:00";
         const startTime = parseTimeString(set.time + ":00");
@@ -938,26 +904,112 @@ function findAndStartTimer(sets, currentTime) {
         }
     }
     countdownDisplay.textContent = "No timer scheduled for now";
-    document.title = "Scheduler";
+    document.title = "Cascade";
 
     setTimeout(() => (countdownDisplay.textContent = ""), 3000);
-}
+};
 
-function parseTimeString(timeString) {
+const parseTimeString = (timeString) => {
     const [hours, minutes, seconds] = timeString.split(":").map(Number);
     return hours * 3600 + minutes * 60 + seconds;
-}
+};
 
-function calculateEndTime(startTime, timers) {
+const calculateEndTime = (startTime, timers) => {
     const totalTimerDuration = timers.reduce((acc, timer) => {
         return acc + parseTimeString(timer.time);
     }, 0);
 
     return startTime + totalTimerDuration;
-}
+};
 
-const now = new Date();
-const currentTime =
-    now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+const setsList = document.getElementById("sets-list");
+const timersList = document.getElementById("timers-list");
 
-findAndStartTimer(sets, currentTime);
+const currentSet = document.getElementById("current-set");
+const countdownDisplay = document.getElementById("countdown");
+
+const setsString = localStorage.getItem("sets");
+const sets = setsString ? JSON.parse(setsString) : [];
+
+let intervalId,
+    duration = 0;
+
+const importBtn = document.getElementById("import-btn");
+const importBtnProxy = document.getElementById("import-btn-proxy");
+importBtnProxy.onclick = () => importBtn.click();
+
+const syncBtn = document.getElementById("sync-btn");
+syncBtn.onclick = () => {
+    clearInterval(intervalId);
+
+    const now = new Date();
+    const currentTime =
+        now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    findAndStartTimer(sets, currentTime);
+};
+
+const importFileInput = document.getElementById("import-btn");
+importFileInput.addEventListener("change", handleImportFile);
+
+const exportButton = document.getElementById("export-btn");
+exportButton.addEventListener("click", exportSetsToFile);
+
+const addSetButton = document.getElementById("add-set-btn");
+addSetButton.addEventListener("click", addNewSet);
+
+const addTimerButton = document.getElementById("add-timer-btn");
+addTimerButton.addEventListener("click", addNewTimer);
+
+let draggedItem = null,
+    orderOfArrays = [];
+
+const draggableSets = document.getElementById("sets");
+
+draggableSets.addEventListener("dragstart", handleDragStart);
+draggableSets.addEventListener("dragend", handleDragEnd);
+draggableSets.addEventListener("dragover", (e) =>
+    handleDragOver(e, draggableSets)
+);
+
+const draggableTimers = document.getElementById("timers");
+
+draggableTimers.addEventListener("dragstart", handleDragStart);
+draggableTimers.addEventListener("dragend", handleDragEnd);
+draggableTimers.addEventListener("dragover", (e) =>
+    handleDragOver(e, draggableTimers)
+);
+
+const modal = document.getElementById("modal");
+const closeButton = document.getElementById("close-button");
+
+document
+    .querySelector("h1")
+    .addEventListener("click", () => modal.classList.remove("hidden"));
+closeButton.addEventListener("click", () => modal.classList.add("hidden"));
+
+const licenseHeader = document.getElementById("license-header");
+const licenseText = document.getElementById("license-text");
+
+licenseHeader.addEventListener("click", () => {
+    licenseText.style.display =
+        licenseText.style.display == "none" ? "block" : "none";
+});
+
+(() => {
+    requestNotificationPermission();
+
+    if (sets.length <= 0) return;
+    initializeSets(sets);
+
+    const { timers } = sets[0];
+    currentSet.innerText = sets[0].title;
+
+    initializeTimers(timers, sets[0].title);
+    createActiveTimer(timers, 0, sets[0].title);
+
+    const now = new Date();
+    const currentTime =
+        now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+    findAndStartTimer(sets, currentTime);
+})();
