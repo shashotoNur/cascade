@@ -7,6 +7,11 @@ const hasTitle = (array, title) => {
     return false;
 };
 
+const isCountdownFormat = (text) => {
+    const regex = /^([^:]+)(?:\[([^:]*)\])?[: ](.*)$/;
+    return regex.test(text);
+};
+
 const initializeSets = (sets) => {
     setsList.querySelector("ul").innerHTML = "";
     sets.forEach((_, index) =>
@@ -115,7 +120,7 @@ const startCounting = (timers, index, partialStart = false, setTitle) => {
     });
 
     const initialDuration = duration;
-    function recurse() {
+    const countdown = () => {
         minutes = parseInt(duration / 60, 10);
         seconds = parseInt(duration % 60, 10);
 
@@ -157,12 +162,12 @@ const startCounting = (timers, index, partialStart = false, setTitle) => {
 
             startCounting(timers, index + 1, false, setTitle);
         }
-    }
-    recurse();
-    intervalId = setInterval(recurse, 1000);
+    };
+    countdown();
+    intervalId = setInterval(countdown, 1000);
 };
 
-const handleImportFile = (event) => {
+const importDataFromFile = (event) => {
     const file = event.target.files[0];
 
     if (!file) return;
@@ -173,14 +178,14 @@ const handleImportFile = (event) => {
         const { result } = target;
         localStorage.setItem("sets", result);
 
-        const sets = JSON.parse(result);
+        sets = JSON.parse(result);
         initializeSets(sets);
     };
 
     reader.readAsText(file);
 };
 
-const exportSetsToFile = () => {
+const exportDataToFile = () => {
     const storedSetsString = localStorage.getItem("sets");
     if (!storedSetsString) return;
 
@@ -335,11 +340,13 @@ const createDurationPicker = (time) => {
 
 const createNavigationButton = (timers, index, setTitle) => {
     const btn = document.createElement("button");
-    btn.textContent = timers[index]?.title || "None";
+    btn.textContent = truncateString(timers[index]?.title || "None");
+    btn.title = timers[index]?.title || "None";
     btn.disabled = !timers[index]?.title;
     btn.onclick = () => {
         createActiveTimer(timers, index, setTitle);
         startCounting(timers, index, false, setTitle);
+        document.getElementById("pause-btn").textContent = "||";
     };
     return btn;
 };
@@ -383,6 +390,7 @@ const createActiveTimerHeader = (timerData) => {
 
     const titleDiv = document.createElement("div");
     titleDiv.textContent = truncateString(timerData.title);
+    titleDiv.title = timerData.title;
 
     const timeDiv = document.createElement("div");
     timeDiv.textContent = timerData.time;
@@ -397,7 +405,6 @@ const createActiveTimerBody = (timers, index, setTitle) => {
     const detailDiv = document.createElement("div");
     const controlDiv = document.createElement("div");
     controlDiv.className = "control-div";
-    const br = document.createElement("br");
 
     const progress = createProgressBar(
         100,
@@ -406,9 +413,22 @@ const createActiveTimerBody = (timers, index, setTitle) => {
     const alertBox = document.createElement("input");
     alertBox.setAttribute("type", "checkbox");
     alertBox.checked = timers[index].alert;
-    alertBox.onclick = () => {
+    alertBox.onclick = async () => {
+        if (Notification.permission !== "granted" && alertBox.checked)
+            await requestNotificationPermission();
+
+        if (Notification.permission !== "granted" && alertBox.checked) {
+            countdownDisplay.textContent = "Notifications are blocked!";
+            setTimeout(() => {
+                countdownDisplay.textContent = "";
+            }, 3000);
+            return (alertBox.checked = false);
+        }
+
         timers[index].alert = alertBox.checked;
         localStorage.setItem("sets", JSON.stringify(sets));
+        initializeTimers(timers);
+        createActiveTimer(timers, index, setTitle);
     };
 
     const inputField = createDurationPicker(timers[index].time);
@@ -426,49 +446,60 @@ const createActiveTimerBody = (timers, index, setTitle) => {
     prevBtn.className = "nav-btn";
     nextBtn.className = "nav-btn";
 
+    const pauseBtn = document.createElement("button");
+    pauseBtn.id = "pause-btn";
+    pauseBtn.textContent = ">";
+    pauseBtn.onclick = () => {
+        if (pauseBtn.textContent == "||") clearInterval(intervalId);
+        else {
+            const inSession = isCountdownFormat(countdownDisplay.textContent);
+            startCounting(timers, index, (partialStart = inSession), setTitle);
+        }
+        document.getElementById("pause-btn").textContent =
+            pauseBtn.textContent == "||" ? ">" : "||";
+    };
+
     const stopBtn = document.createElement("button");
     stopBtn.textContent = "▣";
     stopBtn.onclick = () => {
         clearInterval(intervalId);
         countdownDisplay.textContent = "";
         document.title = "Cascade";
+        pauseBtn.textContent = ">";
     };
 
-    const pauseBtn = document.createElement("button");
-    pauseBtn.textContent = "||";
-    pauseBtn.onclick = () => {
-        if (countdownDisplay.textContent == "") return;
-        if (pauseBtn.textContent == "||") {
-            clearInterval(intervalId);
-        } else startCounting(timers, index, (partialStart = true), setTitle);
-        pauseBtn.textContent = pauseBtn.textContent == "||" ? ">" : "||";
-    };
+    const zeroSec = "000:00:00";
+    const changeTimeInput = createDurationPicker(zeroSec);
 
-    const timeChange = document.createElement("input");
-    timeChange.type = "text";
-    timeChange.value = "0";
     const removeTimeBtn = document.createElement("button");
     removeTimeBtn.textContent = " - ";
     removeTimeBtn.onclick = () => {
-        const timeValue = parseInt(timeChange.value);
+        let [hours, minutes, seconds] = changeTimeInput.value
+            .split(":")
+            .map(Number);
+        const timeValue = hours * 3600 + minutes * 60 + seconds;
         duration -= timeValue;
-        timeChange.value = "0";
+        changeTimeInput.value = zeroSec;
     };
+
     const addTimeBtn = document.createElement("button");
     addTimeBtn.textContent = " + ";
     addTimeBtn.onclick = () => {
-        const timeValue = parseInt(timeChange.value);
+        let [hours, minutes, seconds] = changeTimeInput.value
+            .split(":")
+            .map(Number);
+        const timeValue = hours * 3600 + minutes * 60 + seconds;
         duration += timeValue;
-        timeChange.value = "0";
+        changeTimeInput.value = zeroSec;
     };
 
     const firstControl = document.createElement("div");
     const secondControl = document.createElement("div");
 
-    firstControl.appendChild(stopBtn);
     firstControl.appendChild(pauseBtn);
+    firstControl.appendChild(stopBtn);
     secondControl.appendChild(removeTimeBtn);
-    secondControl.appendChild(timeChange);
+    secondControl.appendChild(changeTimeInput);
     secondControl.appendChild(addTimeBtn);
 
     controlDiv.appendChild(firstControl);
@@ -533,8 +564,10 @@ const createTimerHeader = (timers, index) => {
 
     const titleDiv = document.createElement("div");
     titleDiv.textContent = truncateString(timerData.title);
+    titleDiv.title = timerData.title;
     titleDiv.onclick = () => {
         titleDiv.contentEditable = true;
+        titleDiv.textContent = timerData.title;
         titleDiv.focus();
     };
 
@@ -556,6 +589,8 @@ const createTimerHeader = (timers, index) => {
         );
         sets[setIndex].timers[index].title = newTitle;
         localStorage.setItem("sets", JSON.stringify(sets));
+        titleDiv.textContent = truncateString(newTitle);
+        titleDiv.title = newTitle;
     };
 
     const timeDiv = document.createElement("div");
@@ -578,10 +613,24 @@ const createTimerBody = (timers, index, setTitle) => {
     const alertBox = document.createElement("input");
     alertBox.setAttribute("type", "checkbox");
     alertBox.checked = timers[index].alert;
-    alertBox.onclick = () => {
+    alertBox.onclick = async () => {
+        if (Notification.permission !== "granted" && alertBox.checked)
+            await requestNotificationPermission();
+
+        if (Notification.permission !== "granted" && alertBox.checked) {
+            countdownDisplay.textContent = "Notifications are blocked!";
+            setTimeout(() => {
+                countdownDisplay.textContent = "";
+            }, 3000);
+            return (alertBox.checked = false);
+        }
+
         timers[index].alert = alertBox.checked;
         localStorage.setItem("sets", JSON.stringify(sets));
+        initializeTimers(timers);
+        createActiveTimer(timers, index, setTitle);
     };
+
     const inputField = createDurationPicker(timers[index].time);
     const saveBtn = document.createElement("button");
     saveBtn.textContent = "Save";
@@ -593,7 +642,10 @@ const createTimerBody = (timers, index, setTitle) => {
 
     const startBtn = document.createElement("button");
     startBtn.textContent = "Start";
-    startBtn.onclick = () => startCounting(timers, index, false, setTitle);
+    startBtn.onclick = () => {
+        startCounting(timers, index, false, setTitle);
+        document.getElementById("pause-btn").textContent = "||";
+    };
 
     const deleteBtn = document.createElement("button");
     deleteBtn.textContent = "Delete";
@@ -659,8 +711,10 @@ const createSetHeader = (sets, index) => {
 
     const titleDiv = document.createElement("div");
     titleDiv.textContent = truncateString(setData.title);
+    titleDiv.title = setData.title;
     titleDiv.onclick = () => {
         titleDiv.contentEditable = true;
+        titleDiv.textContent = setData.title;
         titleDiv.focus();
     };
 
@@ -679,6 +733,8 @@ const createSetHeader = (sets, index) => {
 
         sets[index].title = newTitle;
         localStorage.setItem("sets", JSON.stringify(sets));
+        titleDiv.textContent = truncateString(newTitle);
+        titleDiv.title = newTitle;
     };
 
     const timeDiv = document.createElement("div");
@@ -850,14 +906,16 @@ const expandItem = ({ target }) => {
     target.appendChild(detailDiv);
 };
 
-const requestNotificationPermission = () => {
+const requestNotificationPermission = async () => {
     if (!Notification.permission) return;
 
-    Notification.requestPermission().then((permission) => {
-        if (permission === "granted")
-            console.log("Notification permission granted!");
-        else console.log("Notification permission denied.");
-    });
+    const permission = await Notification.requestPermission();
+
+    if (permission === "granted") {
+        console.log("Notification permission granted!");
+    } else {
+        console.log("Notification permission denied.");
+    }
 };
 
 const sendNotification = (title, body, icon = "") => {
@@ -871,7 +929,7 @@ const sendNotification = (title, body, icon = "") => {
             window.open(window.location.href);
         };
     } else {
-        console.log("Notification permission not granted.");
+        alert("Notification permission not granted.");
     }
 };
 
@@ -929,7 +987,7 @@ const currentSet = document.getElementById("current-set");
 const countdownDisplay = document.getElementById("countdown");
 
 const setsString = localStorage.getItem("sets");
-const sets = setsString ? JSON.parse(setsString) : [];
+let sets = setsString ? JSON.parse(setsString) : [];
 
 let intervalId,
     duration = 0;
@@ -949,10 +1007,10 @@ syncBtn.onclick = () => {
 };
 
 const importFileInput = document.getElementById("import-btn");
-importFileInput.addEventListener("change", handleImportFile);
+importFileInput.addEventListener("change", importDataFromFile);
 
 const exportButton = document.getElementById("export-btn");
-exportButton.addEventListener("click", exportSetsToFile);
+exportButton.addEventListener("click", exportDataToFile);
 
 const addSetButton = document.getElementById("add-set-btn");
 addSetButton.addEventListener("click", addNewSet);
@@ -996,8 +1054,6 @@ licenseHeader.addEventListener("click", () => {
 });
 
 (() => {
-    requestNotificationPermission();
-
     if (sets.length <= 0) return;
     initializeSets(sets);
 

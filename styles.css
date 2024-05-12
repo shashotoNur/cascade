@@ -77,7 +77,7 @@ h1 {
 	border-radius: 4px;
 	background-color: #444;
 	color: #ddd;
-	cursor: grab;
+	cursor: move;
 }
 
 .draggable-list li.dragging {
@@ -88,6 +88,10 @@ h1 {
 	display: flex;
 	justify-content: space-between;
 	overflow-y: scroll;
+}
+
+.header div {
+	cursor: text;
 }
 
 .body {
@@ -102,10 +106,10 @@ progress[value] {
 	appearance: none;
 
 	height: 10px;
-	background-color: #333;
+	background-color: #222;
 	width: 80%;
 
-	border: 1px solid #222;
+	border: 1px solid #111;
 	border-radius: 5px;
 	margin: 4%;
 	margin-top: 8%;
