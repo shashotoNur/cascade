@@ -107,8 +107,8 @@ const startCounting = (timers, index, partialStart = false, setTitle) => {
     let [hours, minutes, seconds] = timer.time.split(":").map(Number);
     if (!partialStart) duration = hours * 3600 + minutes * 60 + seconds;
 
-    let totalSetTime = 0,
-        completedDuration = 0;
+    let totalSetTime = 0;
+    completedDuration = 0;
     const set = sets.find((set) => set.title === setTitle);
     set.timers.forEach((timer, i) => {
         let [hours, minutes, seconds] = timer.time.split(":").map(Number);
@@ -119,7 +119,7 @@ const startCounting = (timers, index, partialStart = false, setTitle) => {
         totalSetTime += timerTimeInSec;
     });
 
-    const initialDuration = duration;
+    let initialDuration = duration;
     const countdown = () => {
         minutes = parseInt(duration / 60, 10);
         seconds = parseInt(duration % 60, 10);
@@ -137,10 +137,15 @@ const startCounting = (timers, index, partialStart = false, setTitle) => {
             `timer-${timers[index].title.replace(" ", "-")}-active`
         );
         if (initialDuration > 0) {
+            const d = initialDuration - duration;
+            if (d < 0) initialDuration += d * -1;
+
             const progress =
                 ((initialDuration - duration) * 100) / initialDuration;
             if (progressBar) progressBar.value = progress;
             activeBar.value = progress;
+
+            if (completedDuration < 0) totalSetTime += completedDuration * -1;
 
             const setProgress = (completedDuration * 100) / totalSetTime;
             if (setProgressBar) setProgressBar.value = setProgress;
@@ -479,6 +484,7 @@ const createActiveTimerBody = (timers, index, setTitle) => {
             .map(Number);
         const timeValue = hours * 3600 + minutes * 60 + seconds;
         duration -= timeValue;
+        completedDuration += timeValue;
         changeTimeInput.value = zeroSec;
     };
 
@@ -490,6 +496,7 @@ const createActiveTimerBody = (timers, index, setTitle) => {
             .map(Number);
         const timeValue = hours * 3600 + minutes * 60 + seconds;
         duration += timeValue;
+        completedDuration -= timeValue;
         changeTimeInput.value = zeroSec;
     };
 
@@ -822,6 +829,20 @@ const handleDragStart = (event) => {
 };
 
 const handleDragEnd = (event) => {
+    function allLiHaveSameClass(ulId, className) {
+        const ulElement = document.getElementById(ulId);
+        if (!ulElement) return false;
+
+        const liElements = ulElement.querySelectorAll("li." + className);
+        return liElements.length === ulElement.querySelectorAll("li").length;
+    }
+
+    const setListHaveOnlySets = allLiHaveSameClass("sets", "set");
+    const timerListHaveOnlyTimers = allLiHaveSameClass("timers", "timer");
+
+    if (!setListHaveOnlySets || !timerListHaveOnlyTimers)
+        return (event.target.style.display = "block");
+
     setTimeout(() => {
         if (event.target.className == "set") {
             const ulElement = document.getElementById("sets");
@@ -990,7 +1011,10 @@ const setsString = localStorage.getItem("sets");
 let sets = setsString ? JSON.parse(setsString) : [];
 
 let intervalId,
-    duration = 0;
+    duration = 0,
+    completedDuration = 0,
+    draggedItem = null,
+    orderOfArrays = [];
 
 const importBtn = document.getElementById("import-btn");
 const importBtnProxy = document.getElementById("import-btn-proxy");
@@ -1017,9 +1041,6 @@ addSetButton.addEventListener("click", addNewSet);
 
 const addTimerButton = document.getElementById("add-timer-btn");
 addTimerButton.addEventListener("click", addNewTimer);
-
-let draggedItem = null,
-    orderOfArrays = [];
 
 const draggableSets = document.getElementById("sets");
 
