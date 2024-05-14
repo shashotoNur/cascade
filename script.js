@@ -956,29 +956,30 @@ const sendNotification = (title, body, icon = "") => {
 
 const findAndStartTimer = (sets, currentTime) => {
     for (const set of sets) {
-        if (!set.time) set.time = "00:00";
-        const startTime = parseTimeString(set.time + ":00");
-        const endTime = calculateEndTime(startTime, set.timers);
+        if (set.time) {
+            const startTime = parseTimeString(set.time + ":00");
+            const endTime = calculateEndTime(startTime, set.timers);
 
-        if (currentTime >= startTime && currentTime <= endTime) {
-            const elapsedTime = currentTime - startTime;
-            const { timers } = set;
+            if (currentTime >= startTime && currentTime <= endTime) {
+                const elapsedTime = currentTime - startTime;
+                const { timers } = set;
 
-            let accumulatedTime = 0,
-                index = 0;
+                let accumulatedTime = 0,
+                    index = 0;
 
-            for (const timer of timers) {
-                const timerDuration = parseTimeString(timer.time);
-                accumulatedTime += timerDuration;
+                for (const timer of timers) {
+                    const timerDuration = parseTimeString(timer.time);
+                    accumulatedTime += timerDuration;
 
-                if (elapsedTime < accumulatedTime) {
-                    initializeTimers(timers, set.title);
-                    duration = accumulatedTime - elapsedTime;
+                    if (elapsedTime < accumulatedTime) {
+                        initializeTimers(timers, set.title);
+                        duration = accumulatedTime - elapsedTime;
 
-                    startCounting(timers, index, true, set.title);
-                    return timer;
+                        startCounting(timers, index, true, set.title);
+                        return timer;
+                    }
+                    index++;
                 }
-                index++;
             }
         }
     }
@@ -1073,6 +1074,29 @@ licenseHeader.addEventListener("click", () => {
     licenseText.style.display =
         licenseText.style.display == "none" ? "block" : "none";
 });
+
+const gotoSetsBtn = document.getElementById("goto-sets-btn");
+const gotoTimersBtns = document.getElementsByClassName("goto-timers-btn");
+const gotoActiveTimerBtn = document.getElementById("goto-active-timer-btn");
+const activeTimerSection = document.getElementById("active-timer-section")
+
+gotoSetsBtn.onclick = () => {
+    timersList.style.display = "none";
+    setsList.style.display = "block";
+};
+
+Array.from(gotoTimersBtns).forEach((btn) => {
+    btn.onclick = () => {
+        setsList.style.display = "none";
+        timersList.style.display = "block";
+        activeTimerSection.style.display = "none";
+    };
+});
+
+gotoActiveTimerBtn.onclick = () => {
+    timersList.style.display = "none";
+    activeTimerSection.style.display = "block";
+};
 
 (() => {
     if (sets.length <= 0) return;

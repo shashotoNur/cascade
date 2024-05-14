@@ -32,6 +32,7 @@
 			<section class="column draggable-list" id="sets-list">
 				<h1>Sets</h1>
 				<div class="button-container">
+					<button class="goto-btn goto-timers-btn">></button>
 					<button id="add-set-btn">+</button>
 				</div>
 				<ul id="sets">
@@ -42,15 +43,22 @@
 				<div class="timer-set-header">
 					<h3 id="current-set"></h3>
 					<div class="button-container">
+						<button class="goto-btn" id="goto-sets-btn"><</button>
+						<button class="goto-btn" id="goto-active-timer-btn">></button>
 						<button id="add-timer-btn">+</button>
 					</div>
 				</div>
 				<ul id="timers">
 				</ul>
 			</section>
-			<section class="column">
-				<h1>Active Timer</h1>
-				<div id="active-timer"></div>
+			<section class="column" id="active-timer-section">
+				<div class="active-timer">
+					<h1>Active Timer</h1>
+					<div class="button-container">
+						<button class="goto-btn goto-timers-btn"><</button>
+					</div>
+					<div id="active-timer"></div>
+				</div>
 			</section>
 		</main>
 
