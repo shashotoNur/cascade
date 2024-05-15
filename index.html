@@ -16,15 +16,16 @@
 	<body>
 		<header class="navbar">
 			<div id="navbar-header">
-				<img src="public/icons/android-chrome-192x192.png" alt="Cascade Logo">&nbsp;&nbsp;
-				<h1 id="title">Cascade</h1>
+				<img src="public/icons/android-chrome-192x192.png" title="Cascade Logo" alt="Cascade logo">&nbsp;&nbsp;
+				<h1 id="title" title="Click for more details">Cascade</h1>
 			</div>
 			<h3 id="countdown"></h3>
+			<noscript>You need JavaScript enabled to use this app!</noscript>
 			<div class="utilities">
 				<input type="file" id="import-btn" accept=".json" />
-				<button id="import-btn-proxy">↓</button>
-				<button id="export-btn">↑</button>
-				<button id="sync-btn">⟲</button>
+				<button id="import-btn-proxy" title="Import data from file">↓</button>
+				<button id="export-btn" title="Export data to file">↑</button>
+				<button id="sync-btn" title="Start scheduled timer and sync with current time">⟲</button>
 			</div>
 		</header>
 
@@ -32,8 +33,10 @@
 			<section class="column draggable-list" id="sets-list">
 				<h1>Sets</h1>
 				<div class="button-container">
-					<button class="goto-btn goto-timers-btn">></button>
-					<button id="add-set-btn">+</button>
+					<button class="goto-btn" disabled>
+						&lt;</button>
+					<button title="Display timers list" class="goto-btn goto-timers-btn">></button>
+					<button title="Create a new set" id="add-set-btn">+</button>
 				</div>
 				<ul id="sets">
 				</ul>
@@ -43,9 +46,11 @@
 				<div class="timer-set-header">
 					<h3 id="current-set"></h3>
 					<div class="button-container">
-						<button class="goto-btn" id="goto-sets-btn"><</button>
-						<button class="goto-btn" id="goto-active-timer-btn">></button>
-						<button id="add-timer-btn">+</button>
+						<button title="Display sets list" class="goto-btn" id="goto-sets-btn">
+							&lt;</button>
+						<button title="Display the active timer section" class="goto-btn"
+							id="goto-active-timer-btn">></button>
+						<button title="Create a new timer" id="add-timer-btn">+</button>
 					</div>
 				</div>
 				<ul id="timers">
@@ -55,7 +60,10 @@
 				<div class="active-timer">
 					<h1>Active Timer</h1>
 					<div class="button-container">
-						<button class="goto-btn goto-timers-btn"><</button>
+						<button title="Display timers list" class="goto-btn goto-timers-btn">
+							&lt;</button>
+						<button class="goto-btn" disabled>></button>
+						<button class="goto-btn" disabled>+</button>
 					</div>
 					<div id="active-timer"></div>
 				</div>
@@ -65,12 +73,13 @@
 		<div id="modal" class="hidden">
 			<header>
 				<h1>Cascade</h1>
-				<button id="close-button">&times;</button>
+				<button id="close-button" title="Close this modal">&times;</button>
 			</header>
 			<section>
 				<h3>Codebase</h3>
 
-				<p>The code is hosted on <a href="https://github.com/shashotoNur/cascade">github.</a> Take a look at the
+				<p>The code is hosted on <a href="https://github.com/shashotoNur/cascade" target="_blank">github.</a>
+					Take a look at the
 					readme for more information.</p>
 			</section>
 			<hr>
@@ -200,7 +209,7 @@
 			</section>
 			<hr>
 			<section id="license-section">
-				<h3 id="license-header">Under MIT License</h3>
+				<h3 id="license-header" title="Click to view the license">Under MIT License</h3>
 				<div id="license-text" class="hidden">
 					<p>MIT License</p>
 

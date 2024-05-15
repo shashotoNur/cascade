@@ -25,6 +25,9 @@ const initializeTimers = (timers, setTitle) => {
     timers.forEach((_, index) =>
         timerUL.appendChild(createTimer(timers, index, setTitle))
     );
+    Array.from(gotoTimersBtns).forEach(
+        (btn) => (btn.title = `Display timers in ${setTitle}`)
+    );
 };
 
 const addNewSet = () => {
@@ -105,7 +108,8 @@ const startCounting = (timers, index, partialStart = false, setTitle) => {
 
     const prefix = timer.title + " [" + setTitle + "]: ";
     let [hours, minutes, seconds] = timer.time.split(":").map(Number);
-    if (!partialStart) duration = hours * 3600 + minutes * 60 + seconds;
+    let initialDuration = hours * 3600 + minutes * 60 + seconds;
+    if (!partialStart) duration = initialDuration;
 
     let totalSetTime = 0;
     completedDuration = 0;
@@ -119,7 +123,6 @@ const startCounting = (timers, index, partialStart = false, setTitle) => {
         totalSetTime += timerTimeInSec;
     });
 
-    let initialDuration = duration;
     const countdown = () => {
         minutes = parseInt(duration / 60, 10);
         seconds = parseInt(duration % 60, 10);
@@ -399,6 +402,7 @@ const createActiveTimerHeader = (timerData) => {
 
     const timeDiv = document.createElement("div");
     timeDiv.textContent = timerData.time;
+    timeDiv.title = "Duration of countdown";
 
     header.appendChild(titleDiv);
     header.appendChild(timeDiv);
@@ -415,9 +419,15 @@ const createActiveTimerBody = (timers, index, setTitle) => {
         100,
         `timer-${timers[index].title.replace(" ", "-")}` + "-active"
     );
+    progress.title = "Progress bar";
+
     const alertBox = document.createElement("input");
     alertBox.setAttribute("type", "checkbox");
     alertBox.checked = timers[index].alert;
+    alertBox.title = alertBox.checked
+        ? "You will be notified once countdown ends"
+        : "Countdown will end quietly";
+
     alertBox.onclick = async () => {
         if (Notification.permission !== "granted" && alertBox.checked)
             await requestNotificationPermission();
@@ -437,8 +447,11 @@ const createActiveTimerBody = (timers, index, setTitle) => {
     };
 
     const inputField = createDurationPicker(timers[index].time);
+    inputField.title = "Enter duration of countdown";
+
     const saveBtn = document.createElement("button");
     saveBtn.textContent = "Save";
+    saveBtn.title = "Click to update countdown duration";
     saveBtn.onclick = () => {
         timers[index].time = inputField.value;
         initializeTimers(timers);
@@ -448,24 +461,35 @@ const createActiveTimerBody = (timers, index, setTitle) => {
     const prevBtn = createNavigationButton(timers, index - 1, setTitle);
     const nextBtn = createNavigationButton(timers, index + 1, setTitle);
 
+    prevBtn.title = prevBtn.disabled
+        ? "No previous timer"
+        : "Click to start previous timer";
+    nextBtn.title = nextBtn.disabled
+        ? "No follow up timer"
+        : "Click to start next timer";
     prevBtn.className = "nav-btn";
     nextBtn.className = "nav-btn";
 
     const pauseBtn = document.createElement("button");
     pauseBtn.id = "pause-btn";
     pauseBtn.textContent = ">";
+    pauseBtn.title = "Click to start timer";
     pauseBtn.onclick = () => {
         if (pauseBtn.textContent == "||") clearInterval(intervalId);
         else {
             const inSession = isCountdownFormat(countdownDisplay.textContent);
             startCounting(timers, index, (partialStart = inSession), setTitle);
         }
-        document.getElementById("pause-btn").textContent =
-            pauseBtn.textContent == "||" ? ">" : "||";
+
+        const thisBtn = document.getElementById("pause-btn");
+        thisBtn.textContent = pauseBtn.textContent == "||" ? ">" : "||";
+        thisBtn.title =
+            thisBtn.textContent == "||" ? "Click to pause" : "Click to resume";
     };
 
     const stopBtn = document.createElement("button");
     stopBtn.textContent = "▣";
+    stopBtn.title = "Stop this timer";
     stopBtn.onclick = () => {
         clearInterval(intervalId);
         countdownDisplay.textContent = "";
@@ -475,9 +499,12 @@ const createActiveTimerBody = (timers, index, setTitle) => {
 
     const zeroSec = "000:00:00";
     const changeTimeInput = createDurationPicker(zeroSec);
+    changeTimeInput.title =
+        "Enter duration to add or remove time from the running timer for this session";
 
     const removeTimeBtn = document.createElement("button");
     removeTimeBtn.textContent = " - ";
+    removeTimeBtn.title = "Remove time";
     removeTimeBtn.onclick = () => {
         let [hours, minutes, seconds] = changeTimeInput.value
             .split(":")
@@ -490,6 +517,7 @@ const createActiveTimerBody = (timers, index, setTitle) => {
 
     const addTimeBtn = document.createElement("button");
     addTimeBtn.textContent = " + ";
+    addTimeBtn.title = "Add time";
     addTimeBtn.onclick = () => {
         let [hours, minutes, seconds] = changeTimeInput.value
             .split(":")
@@ -602,6 +630,7 @@ const createTimerHeader = (timers, index) => {
 
     const timeDiv = document.createElement("div");
     timeDiv.textContent = timerData.time;
+    timeDiv.title = "Duration of countdown";
 
     header.appendChild(titleDiv);
     header.appendChild(timeDiv);
@@ -617,9 +646,14 @@ const createTimerBody = (timers, index, setTitle) => {
         100,
         `timer-${timers[index].title.replace(" ", "-")}`
     );
+    progress.title = "Progress bar";
+
     const alertBox = document.createElement("input");
     alertBox.setAttribute("type", "checkbox");
     alertBox.checked = timers[index].alert;
+    alertBox.title = alertBox.checked
+        ? "You will be notified once countdown ends"
+        : "Countdown will end quietly";
     alertBox.onclick = async () => {
         if (Notification.permission !== "granted" && alertBox.checked)
             await requestNotificationPermission();
@@ -639,8 +673,11 @@ const createTimerBody = (timers, index, setTitle) => {
     };
 
     const inputField = createDurationPicker(timers[index].time);
+    inputField.title = "Enter duration of countdown";
+
     const saveBtn = document.createElement("button");
     saveBtn.textContent = "Save";
+    saveBtn.title = "Click to update countdown duration";
     saveBtn.onclick = () => {
         timers[index].time = inputField.value;
         initializeTimers(timers);
@@ -649,6 +686,7 @@ const createTimerBody = (timers, index, setTitle) => {
 
     const startBtn = document.createElement("button");
     startBtn.textContent = "Start";
+    startBtn.title = "Start the countdown";
     startBtn.onclick = () => {
         startCounting(timers, index, false, setTitle);
         document.getElementById("pause-btn").textContent = "||";
@@ -656,6 +694,7 @@ const createTimerBody = (timers, index, setTitle) => {
 
     const deleteBtn = document.createElement("button");
     deleteBtn.textContent = "Delete";
+    deleteBtn.title = "Delete this timer";
     deleteBtn.onclick = () => {
         const targetSetIndex = sets.findIndex(
             (set) => set.title === currentSet.innerText
@@ -700,8 +739,10 @@ const createSet = (sets, index) => {
             : body.scrollHeight + "px";
 
         const { timers } = sets[index];
-        currentSet.innerText = sets[index].title;
-        initializeTimers(timers, sets[index].title);
+        if (body.style.maxHeight != "") {
+            currentSet.innerText = sets[index].title;
+            initializeTimers(timers, sets[index].title);
+        }
     });
 
     set.appendChild(header);
@@ -746,6 +787,7 @@ const createSetHeader = (sets, index) => {
 
     const timeDiv = document.createElement("div");
     timeDiv.textContent = setData.scheduled ? setData.time : "Not scheduled";
+    timeDiv.title = "Scheduled time";
 
     header.appendChild(titleDiv);
     header.appendChild(timeDiv);
@@ -762,14 +804,19 @@ const createSetBody = (sets, index) => {
         100,
         `set-${setData.title.replace(" ", "-")}`
     );
+    progress.title = "Progress bar";
+
     const inputField = document.createElement("input");
     inputField.className = "input-field";
     inputField.type = "time";
     inputField.value = setData.scheduled ? setData.time : "";
+    inputField.title = "Set a time and press enter to confirm";
 
     inputField.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
             const enteredTime = inputField.value;
+            if (enteredTime == "") return;
+
             sets[index].time = enteredTime;
             sets[index].scheduled = true;
             initializeSets(sets);
@@ -778,8 +825,11 @@ const createSetBody = (sets, index) => {
     });
 
     const scheduleBtn = createScheduleButton(setData, inputField);
+    scheduleBtn.title = setData.scheduled ? "Remove schedule" : "Add schedule";
+
     const deleteButton = document.createElement("button");
     deleteButton.textContent = "Delete";
+    deleteButton.title = "Delete this set";
     deleteButton.onclick = () => {
         sets.splice(index, 1);
 
@@ -1073,12 +1123,16 @@ const licenseText = document.getElementById("license-text");
 licenseHeader.addEventListener("click", () => {
     licenseText.style.display =
         licenseText.style.display == "none" ? "block" : "none";
+    licenseHeader.title =
+        licenseText.style.display == "none"
+            ? "Click to view the license"
+            : "Click to hide the license";
 });
 
 const gotoSetsBtn = document.getElementById("goto-sets-btn");
 const gotoTimersBtns = document.getElementsByClassName("goto-timers-btn");
 const gotoActiveTimerBtn = document.getElementById("goto-active-timer-btn");
-const activeTimerSection = document.getElementById("active-timer-section")
+const activeTimerSection = document.getElementById("active-timer-section");
 
 gotoSetsBtn.onclick = () => {
     timersList.style.display = "none";

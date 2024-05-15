@@ -282,33 +282,51 @@ a:hover,
 		flex: 1 0 50%;
 		max-width: 92.5%;
 		height: auto;
+		min-height: 80vh;
 	}
 
 	.navbar {
 		flex-direction: column;
-		padding: 1.5rem;
-		height: 9rem;
+		padding: 0rem;
 	}
 
 	#navbar-header,
-	.utilities,
-	#countdown {
-		width: 100%;
+	.utilities {
+		width: 95%;
+	}
+
+	#navbar-header {
+		padding: 3% 0 0 5%;
+		margin: 0;
 	}
 
 	.utilities {
 		display: flex;
 		justify-content: flex-end;
+		padding: 0 3% 0 0;
 	}
 
 	#navbar-header {
 		align-content: flex-start;
 	}
 
-	#countdown {
-		order: 2;
-		margin: 0.5rem;
-		padding: 0;
+	#countdown:empty {
+		display: none;
+	}
+
+	#countdown:not(:empty) {
+		position: fixed;
+		top: 10%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+
+		background-color: #111;
+		padding: 1rem;
+		margin: 0;
+
+		width: 80%;
+		opacity: 0.9;
+		color: #fff;
 	}
 
 	#modal {
@@ -332,5 +350,15 @@ a:hover,
 
 		border-radius: 0.25rem;
 		transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+	}
+
+	.goto-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+		padding: 0.25rem 0.8rem;
+		font-size: 0.95rem;
+
+		background-color: #ddd;
+		color: #888;
 	}
 }
