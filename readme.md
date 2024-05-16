@@ -31,7 +31,8 @@ A complete list of its features can be found below.
 
 ## Visuals
 
-![Screenshot of details](public/preview/app_home.png)
+![Screenshot of app](sample/preview/desktop_preview.png)
+![Screenshot of details](sample/preview/details_desktop_preview.png)
 
 ## Features
 
@@ -57,9 +58,17 @@ A complete list of its features can be found below.
 
 * Import and export your local data for easy backup and transfer.
 
+**Copy Mechanism:**
+
+* Easily copy a timer to any of the existing sets.
+
 **Alert Notifications:**
 
 * Set alerts for timer completions to stay informed.
+
+**Repeat timers in loop:**
+
+* Set loop for timer to restart it over and over again.
 
 **Flexible Controls:**
 
@@ -88,6 +97,7 @@ A complete list of its features can be found below.
 
 * **Renaming:** Click directly on the current name of a set or timer and type the desired new name.
 * **Alerts:** Check the box next to "Alert" for a timer to ensure you receive a notification when it finishes.
+* **Editing:**
 * **Deleting:** Click the delete icon next to a set or timer to remove it completely.
 
 **Running Timers:**
@@ -97,11 +107,11 @@ A complete list of its features can be found below.
 
 **Working with Active Timers:**
 
+* **Loops:** Check the box next to "Loop" for a timer to make it restart endlessly.
 * **Pause/Resume:** Click the "Pause" or "Resume" button to control the timer's progress.
 * **Stop:** Click the "Stop" button to completely end the timer and remove it from the "Active Timer" column.
-* **Editing:** Click on the timer within the "Active Timer" column to adjust its duration or other settings.
-* **Skipping:** Use the "Previous" and "Next" buttons (if available) to navigate between timers within the active set.
 * **Adjusting Time:** Click the white box next to the current timer duration and adjust the value to add or remove time from the ongoing execution. Click "Save" to confirm the change.
+* **Skipping:** Use the "Previous" and "Next" buttons (if available) to navigate between timers within the active set.
 
 **Reordering and Data Management:**
 
@@ -110,11 +120,11 @@ A complete list of its features can be found below.
 
 **Launching Scheduled Sets:**
 
-* Click the "Sync" button in the navbar to instantly launch any set that is scheduled for the current time.
+* Click the "⟲" button in the navbar to instantly launch any set that is scheduled for the current time.
 
 **App Information:**
 
-* Click on the app title to open a modal displaying details about the app.
+* Click on the title "Cascade" to open a modal displaying details about the app.
 
 **Remember:** Timers require a set for creation. Get organized and productive with Cascade!
 

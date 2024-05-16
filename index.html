@@ -5,21 +5,24 @@
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta name="description" content="A web based multi-stage scheduler app.">
+		<meta name="theme-color" content="#222">
 
 		<title>Cascade</title>
 
 		<link defer rel="stylesheet" href="styles.css">
-		<link rel="icon" type="image/x-icon" href="public/icons/favicon.ico">
+		<link rel="icon" type="image/x-icon" href="icons/favicon.ico">
+		<link rel="manifest" href="manifest.json" />
 		<script defer src="script.js"></script>
 	</head>
 
 	<body>
 		<header class="navbar">
 			<div id="navbar-header">
-				<img src="public/icons/android-chrome-192x192.png" title="Cascade Logo" alt="Cascade logo">&nbsp;&nbsp;
+				<img src="icons/cascade-192x192.png" title="Cascade Logo" alt="Cascade logo" height="192"
+					width="192">&nbsp;&nbsp;
 				<h1 id="title" title="Click for more details">Cascade</h1>
 			</div>
-			<h3 id="countdown"></h3>
+			<h2 id="countdown"></h2>
 			<noscript>You need JavaScript enabled to use this app!</noscript>
 			<div class="utilities">
 				<input type="file" id="import-btn" accept=".json" />
@@ -44,7 +47,7 @@
 			<section class="column draggable-list" id="timers-list">
 				<h1>Timers</h1>
 				<div class="timer-set-header">
-					<h3 id="current-set"></h3>
+					<h2 id="current-set"></h2>
 					<div class="button-container">
 						<button title="Display sets list" class="goto-btn" id="goto-sets-btn">
 							&lt;</button>
@@ -76,15 +79,16 @@
 				<button id="close-button" title="Close this modal">&times;</button>
 			</header>
 			<section>
-				<h3>Codebase</h3>
+				<h2>Codebase</h2>
 
 				<p>The code is hosted on <a href="https://github.com/shashotoNur/cascade" target="_blank">github.</a>
 					Take a look at the
 					readme for more information.</p>
+				<p><a href="mailto:shashoto.nur@proton.me?subject=Wanted%20to%20talk%20about%20Cascade">Contact</a></p>
 			</section>
 			<hr>
 			<section id="introduction">
-				<h3>Introduction</h3>
+				<h2>Introduction</h2>
 
 				<p>Introducing Cascade, your FOSS, one-stop solution for conquering time and accomplishing tasks
 					efficiently.</p>
@@ -95,7 +99,7 @@
 			</section>
 			<hr>
 			<section id="usage-guide">
-				<h3>Usage Guide</h3>
+				<h2>Usage Guide</h2>
 				<h4>Creating Sets and Timers</h4>
 
 				<ol>
@@ -142,6 +146,10 @@
 						notification when it finishes.
 					</li>
 					<li>
+						<strong>Editing:</strong> Click on a timer's text input field to adjust its duration or other
+						settings.
+					</li>
+					<li>
 						<strong>Deleting:</strong> Click the delete icon next to a set or timer to remove it completely.
 					</li>
 				</ul>
@@ -161,6 +169,9 @@
 
 				<ul>
 					<li>
+						<strong>Loops:</strong> Check the box next to "Loop" for a timer to make it restart endlessly.
+					</li>
+					<li>
 						<strong>Pause/Resume:</strong> Click the "Pause" or "Resume" button to control the timer's
 						progress.
 					</li>
@@ -169,17 +180,13 @@
 						the "Active Timer" column.
 					</li>
 					<li>
-						<strong>Editing:</strong> Click on the timer within the "Active Timer" column to adjust its
-						duration or other settings.
+						<strong>Adjusting Time:</strong> Click the white box next to the current timer duration and
+						adjust the value to add or remove time from the ongoing execution. Click "Save" to confirm the
+						change.
 					</li>
 					<li>
 						<strong>Skipping:</strong> Use the "Previous" and "Next" buttons (if available) to navigate
 						between timers within the active set.
-					</li>
-					<li>
-						<strong>Adjusting Time:</strong> Click the white box next to the current timer duration and
-						adjust the value to add or remove time from the ongoing execution. Click "Save" to confirm the
-						change.
 					</li>
 				</ul>
 
@@ -193,14 +200,14 @@
 				<h4>Launching Scheduled Sets</h4>
 
 				<p>
-					Click the "Sync" button in the navbar to instantly launch any set that is scheduled for the current
+					Click the "⟲" button in the navbar to instantly launch any set that is scheduled for the current
 					time.
 				</p>
 
 				<h4>App Information</h4>
 
 				<p>
-					Click on the app title to open a modal displaying details about the app.
+					Click on the title "Cascade" to open a modal displaying details about the app.
 				</p>
 
 				<p>
@@ -209,7 +216,7 @@
 			</section>
 			<hr>
 			<section id="license-section">
-				<h3 id="license-header" title="Click to view the license">Under MIT License</h3>
+				<h2 id="license-header" title="Click to view the license">Under MIT License</h2>
 				<div id="license-text" class="hidden">
 					<p>MIT License</p>
 

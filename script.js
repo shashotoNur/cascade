@@ -168,7 +168,9 @@ const startCounting = (timers, index, partialStart = false, setTitle) => {
                 );
             }
 
-            startCounting(timers, index + 1, false, setTitle);
+            const nextTimerIndex = timer.loop ? index : index + 1;
+
+            startCounting(timers, nextTimerIndex, false, setTitle);
         }
     };
     countdown();
@@ -188,6 +190,8 @@ const importDataFromFile = (event) => {
 
         sets = JSON.parse(result);
         initializeSets(sets);
+        initializeTimers(sets[0].timers, sets[0].title);
+        currentSet.textContent = sets[0].title;
     };
 
     reader.readAsText(file);
@@ -423,6 +427,10 @@ const createActiveTimerBody = (timers, index, setTitle) => {
 
     const alertBox = document.createElement("input");
     alertBox.setAttribute("type", "checkbox");
+    const alertBoxId =
+        timers[index].title.replace(" ", "-") + "-active-alertbox";
+    alertBox.id = alertBoxId;
+
     alertBox.checked = timers[index].alert;
     alertBox.title = alertBox.checked
         ? "You will be notified once countdown ends"
@@ -442,33 +450,25 @@ const createActiveTimerBody = (timers, index, setTitle) => {
 
         timers[index].alert = alertBox.checked;
         localStorage.setItem("sets", JSON.stringify(sets));
-        initializeTimers(timers);
-        createActiveTimer(timers, index, setTitle);
+        document.getElementById(
+            timers[index].title.replace(" ", "-") + "-alertbox"
+        ).checked = alertBox.checked;
     };
 
-    const inputField = createDurationPicker(timers[index].time);
-    inputField.title = "Enter duration of countdown";
+    const loopBox = document.createElement("input");
+    loopBox.setAttribute("type", "checkbox");
+    loopBox.id = timers[index].title.replace(" ", "-") + "-active-loopbox";
 
-    const saveBtn = document.createElement("button");
-    saveBtn.textContent = "Save";
-    saveBtn.title = "Click to update countdown duration";
-    saveBtn.onclick = () => {
-        timers[index].time = inputField.value;
-        initializeTimers(timers);
-        localStorage.setItem("sets", JSON.stringify(sets));
+    loopBox.checked = timers[index].loop;
+    loopBox.title = loopBox.checked
+        ? "The countdown will restart endlessly until stopped"
+        : "Countdown will end after a single run";
+    loopBox.onclick = async () => {
+        timers[index].loop = loopBox.checked;
+        loopBox.title = loopBox.checked
+            ? "The countdown will restart endlessly until stopped"
+            : "Countdown will end after a single run";
     };
-
-    const prevBtn = createNavigationButton(timers, index - 1, setTitle);
-    const nextBtn = createNavigationButton(timers, index + 1, setTitle);
-
-    prevBtn.title = prevBtn.disabled
-        ? "No previous timer"
-        : "Click to start previous timer";
-    nextBtn.title = nextBtn.disabled
-        ? "No follow up timer"
-        : "Click to start next timer";
-    prevBtn.className = "nav-btn";
-    nextBtn.className = "nav-btn";
 
     const pauseBtn = document.createElement("button");
     pauseBtn.id = "pause-btn";
@@ -529,10 +529,13 @@ const createActiveTimerBody = (timers, index, setTitle) => {
     };
 
     const firstControl = document.createElement("div");
+    firstControl.className = "first-control";
     const secondControl = document.createElement("div");
+    secondControl.className = "second-control";
 
     firstControl.appendChild(pauseBtn);
     firstControl.appendChild(stopBtn);
+
     secondControl.appendChild(removeTimeBtn);
     secondControl.appendChild(changeTimeInput);
     secondControl.appendChild(addTimeBtn);
@@ -540,26 +543,42 @@ const createActiveTimerBody = (timers, index, setTitle) => {
     controlDiv.appendChild(firstControl);
     controlDiv.appendChild(secondControl);
 
+    const prevBtn = createNavigationButton(timers, index - 1, setTitle);
+    const nextBtn = createNavigationButton(timers, index + 1, setTitle);
+
+    prevBtn.title = prevBtn.disabled
+        ? "No previous timer"
+        : "Click to start previous timer";
+    nextBtn.title = nextBtn.disabled
+        ? "No follow up timer"
+        : "Click to start next timer";
+    prevBtn.className = "nav-btn";
+    nextBtn.className = "nav-btn";
+
     const progressDiv = document.createElement("div");
     progressDiv.appendChild(progress);
 
-    const alertDiv = document.createElement("div");
-    alertDiv.className = "alert-div";
+    const checkboxDiv = document.createElement("div");
+    checkboxDiv.className = "checkbox-div";
     const alertLabel = createLabel("Alert");
-    alertLabel.className = "alert-label";
-    alertDiv.appendChild(alertBox);
-    alertDiv.appendChild(alertLabel);
+    alertLabel.className = "checkbox-label";
+    checkboxDiv.appendChild(alertBox);
+    checkboxDiv.appendChild(alertLabel);
+
+    const loopLabel = createLabel("Loop");
+    loopLabel.className = "checkbox-label";
+    checkboxDiv.appendChild(loopBox);
+    checkboxDiv.appendChild(loopLabel);
 
     const navDiv = document.createElement("div");
+    navDiv.className = "nav-btn-div";
     navDiv.appendChild(prevBtn);
     navDiv.appendChild(nextBtn);
 
     detailDiv.appendChild(progressDiv);
-    detailDiv.appendChild(alertDiv);
-    detailDiv.appendChild(inputField);
-    detailDiv.appendChild(saveBtn);
-    detailDiv.appendChild(navDiv);
+    detailDiv.appendChild(checkboxDiv);
     detailDiv.appendChild(controlDiv);
+    detailDiv.appendChild(navDiv);
 
     const body = document.createElement("div");
     const lineBreak = document.createElement("br");
@@ -650,6 +669,9 @@ const createTimerBody = (timers, index, setTitle) => {
 
     const alertBox = document.createElement("input");
     alertBox.setAttribute("type", "checkbox");
+    const alertBoxId = timers[index].title.replace(" ", "-") + "-alertbox";
+    alertBox.id = alertBoxId;
+
     alertBox.checked = timers[index].alert;
     alertBox.title = alertBox.checked
         ? "You will be notified once countdown ends"
@@ -668,8 +690,51 @@ const createTimerBody = (timers, index, setTitle) => {
 
         timers[index].alert = alertBox.checked;
         localStorage.setItem("sets", JSON.stringify(sets));
-        initializeTimers(timers);
-        createActiveTimer(timers, index, setTitle);
+
+        document.getElementById(
+            timers[index].title.replace(" ", "-") + "-active-alertbox"
+        ).checked = alertBox.checked;
+    };
+
+    const copyDiv = document.createElement("div");
+    copyDiv.className = "dropdown";
+
+    const copyBtn = document.createElement("button");
+    copyBtn.textContent = "Copy >";
+    const copyLocations = document.createElement("div");
+    copyLocations.className = "dropdown-content";
+    sets.forEach((set) => {
+        const location = document.createElement("div");
+        location.textContent = set.title;
+        location.onclick = () => {
+            let i = 1,
+                timerTitle = timers[index].title;
+            while (true) {
+                const titleExists = hasTitle(set.timers, timerTitle);
+                if (!titleExists) break;
+                timerTitle += ` (${i})`;
+                i++;
+            }
+            const copyingTimer = Object.assign({}, timers[index], {
+                title: timerTitle,
+            });
+            set.timers = [...set.timers, copyingTimer];
+            localStorage.setItem("sets", JSON.stringify(sets));
+
+            initializeTimers(set.timers, set.title);
+            currentSet.textContent = set.title;
+
+            countdownDisplay.textContent = `${timers[index].title} has been copied to ${set.title}`;
+            setTimeout(() => {
+                countdownDisplay.textContent = "";
+            }, 3000);
+        };
+        copyLocations.appendChild(location);
+    });
+
+    copyDiv.onclick = () => {
+        console.log(copyLocations.style)
+        copyLocations.style.display = "block";
     };
 
     const inputField = createDurationPicker(timers[index].time);
@@ -708,15 +773,19 @@ const createTimerBody = (timers, index, setTitle) => {
     const progressDiv = document.createElement("div");
     progressDiv.appendChild(progress);
 
-    const alertDiv = document.createElement("div");
-    alertDiv.className = "alert-div";
+    const checkboxDiv = document.createElement("div");
+    checkboxDiv.className = "checkbox-div";
     const alertLabel = createLabel("Alert");
-    alertLabel.className = "alert-label";
-    alertDiv.appendChild(alertBox);
-    alertDiv.appendChild(alertLabel);
+    alertLabel.className = "checkbox-label";
+    checkboxDiv.appendChild(alertBox);
+    checkboxDiv.appendChild(alertLabel);
+
+    copyDiv.appendChild(copyBtn);
+    copyDiv.appendChild(copyLocations);
+    checkboxDiv.appendChild(copyDiv);
 
     body.appendChild(progressDiv);
-    body.appendChild(alertDiv);
+    body.appendChild(checkboxDiv);
     body.appendChild(inputField);
     body.appendChild(saveBtn);
     body.appendChild(startBtn);
@@ -1025,6 +1094,8 @@ const findAndStartTimer = (sets, currentTime) => {
                         initializeTimers(timers, set.title);
                         duration = accumulatedTime - elapsedTime;
 
+                        currentSet.textContent = set.title;
+
                         startCounting(timers, index, true, set.title);
                         return timer;
                     }
@@ -1069,7 +1140,12 @@ let intervalId,
 
 const importBtn = document.getElementById("import-btn");
 const importBtnProxy = document.getElementById("import-btn-proxy");
-importBtnProxy.onclick = () => importBtn.click();
+importBtnProxy.onclick = () => {
+    const proceed = confirm(
+        "Any of your existing data will be overwritten. Do you wish to proceed?"
+    );
+    if (proceed) importBtn.click();
+};
 
 const syncBtn = document.getElementById("sync-btn");
 syncBtn.onclick = () => {
@@ -1167,4 +1243,18 @@ gotoActiveTimerBtn.onclick = () => {
         now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
     findAndStartTimer(sets, currentTime);
+
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+            .register("/serviceworker.js")
+            .then(function (registration) {
+                console.log(
+                    "Service worker registration successful:",
+                    registration
+                );
+            })
+            .catch(function (error) {
+                console.log("Service worker registration failed:", error);
+            });
+    }
 })();

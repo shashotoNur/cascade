@@ -1,0 +1,33 @@
+{
+    "name": "Cascade",
+    "short_name": "Cascade",
+    "description": "A web based multi-stage scheduler app.",
+    "start_url": "https://shashotonur.github.io/cascade/",
+    "scope": "https://shashotonur.github.io/cascade/",
+    "theme_color": "#222",
+    "background_color": "#222",
+    "display": "standalone",
+    "icons": [
+        {
+            "src": "icons/cascade-32x32.png",
+            "sizes": "32x32",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/cascade-180x180.png",
+            "sizes": "180x180",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/cascade-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/cascade-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
