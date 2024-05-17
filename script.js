@@ -162,14 +162,16 @@ const startCounting = (timers, index, partialStart = false, setTitle) => {
             activeBar.value = 0;
 
             if (timer.alert) {
-                sendNotification(
-                    timer.title,
-                    "Your timer countdown has finished!"
-                );
+                sendNotification(timer.title);
+                audio.play();
+
+                setTimeout(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }, 2000);
             }
 
             const nextTimerIndex = timer.loop ? index : index + 1;
-
             startCounting(timers, nextTimerIndex, false, setTitle);
         }
     };
@@ -733,7 +735,6 @@ const createTimerBody = (timers, index, setTitle) => {
     });
 
     copyDiv.onclick = () => {
-        console.log(copyLocations.style)
         copyLocations.style.display = "block";
     };
 
@@ -806,6 +807,10 @@ const createSet = (sets, index) => {
         body.style.maxHeight = body.style.maxHeight
             ? null
             : body.scrollHeight + "px";
+
+        Array.from(document.getElementsByClassName("body")).forEach((bd) => {
+            if (body !== bd) bd.style.maxHeight = null;
+        });
 
         const { timers } = sets[index];
         if (body.style.maxHeight != "") {
@@ -1058,19 +1063,20 @@ const requestNotificationPermission = async () => {
     }
 };
 
-const sendNotification = (title, body, icon = "") => {
-    if (Notification.permission === "granted") {
-        const notification = new Notification(title, {
-            body: body,
-            icon: icon,
-        });
-
-        notification.onclick = () => {
-            window.open(window.location.href);
-        };
-    } else {
+const sendNotification = (title) => {
+    if (Notification.permission !== "granted")
         alert("Notification permission not granted.");
-    }
+
+    const notification = new Notification(title, {
+        body: "Time's up!",
+        icon: "https://shashotonur.github.io/cascade/icons/favicon.ico",
+        requireInteraction: true,
+        vibrate: [200, 100, 200],
+    });
+
+    notification.onclick = () => {
+        window.open(window.location.href);
+    };
 };
 
 const findAndStartTimer = (sets, currentTime) => {
@@ -1128,6 +1134,8 @@ const timersList = document.getElementById("timers-list");
 
 const currentSet = document.getElementById("current-set");
 const countdownDisplay = document.getElementById("countdown");
+
+const audio = document.getElementById("myAudio");
 
 const setsString = localStorage.getItem("sets");
 let sets = setsString ? JSON.parse(setsString) : [];
@@ -1243,18 +1251,18 @@ gotoActiveTimerBtn.onclick = () => {
         now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
     findAndStartTimer(sets, currentTime);
-
-    if ("serviceWorker" in navigator) {
-        navigator.serviceWorker
-            .register("/serviceworker.js")
-            .then(function (registration) {
-                console.log(
-                    "Service worker registration successful:",
-                    registration
-                );
-            })
-            .catch(function (error) {
-                console.log("Service worker registration failed:", error);
-            });
-    }
 })();
+
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker
+        .register("/cascade/serviceworker.js")
+        .then(function (registration) {
+            console.log(
+                "Service worker registration successful:",
+                registration
+            );
+        })
+        .catch(function (error) {
+            console.log("Service worker registration failed:", error);
+        });
+}

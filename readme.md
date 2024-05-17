@@ -135,6 +135,10 @@ A complete list of its features can be found below.
 
 ## [License](LICENSE)
 
+## Acknowledgement
+
+- **[Information Bell](https://github.com/akx/Notifications/blob/master/OGG/Information_Bell.ogg)** by [akx](https://github.com/akx) has been used as the notification sound.
+
 ## Contact
 
 [<img align="left" alt="email" src="https://img.shields.io/badge/email-8838FF?logo=proton&logoColor=white&style=for-the-badge" />](mailto:shashoto.nur@proton.me?subject=Wanted%20to%20talk%20about%20Cascade)
