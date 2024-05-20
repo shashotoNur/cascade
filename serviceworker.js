@@ -1,4 +1,4 @@
-const staticCacheName = "cascade-cache@0.0.1"; // You can change this name if needed
+const staticCacheName = "cascade-cache@0.0.1";
 
 self.addEventListener("install", (event) => {
     event.waitUntil(
@@ -6,16 +6,16 @@ self.addEventListener("install", (event) => {
             .open(staticCacheName)
             .then((cache) => {
                 return cache.addAll([
-                    "/", // This caches index.html at the root
-                    "./styles.css",
-                    "./script.js",
-                    "./icons/favicon.ico",
-                    "./audio/notification_sound.mp3",
-                    "./icons/cascade-192x192.png",
-                    "./icons/cascade-180x180.png",
-                    "./icons/cascade-32x32.png",
-                    "./icons/cascade-512x512.png",
-                    "./serviceworker.js",
+                    "/cascade/", // This caches index.html at the root
+                    "/cascade/styles.css",
+                    "/cascade/script.js",
+                    "/cascade/icons/favicon.ico",
+                    "/cascade/audio/notification_sound.mp3",
+                    "/cascade/icons/cascade-192x192.png",
+                    "/cascade/icons/cascade-180x180.png",
+                    "/cascade/icons/cascade-32x32.png",
+                    "/cascade/icons/cascade-512x512.png",
+                    "/cascade/serviceworker.js",
                 ]);
             })
     );

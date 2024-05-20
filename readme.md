@@ -15,6 +15,7 @@ A web based multi-stage scheduler app.
   - [Features](#features)
   - [Usage Guide](#usage-guide)
   - [License](#license)
+  - [Acknowledgement](#acknowledgement)
   - [Contact](#contact)
 
 ## About

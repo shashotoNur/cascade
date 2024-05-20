@@ -1196,9 +1196,14 @@ draggableTimers.addEventListener("dragover", (e) =>
 const modal = document.getElementById("modal");
 const closeButton = document.getElementById("close-button");
 
-document
-    .querySelector("h1")
-    .addEventListener("click", () => modal.classList.remove("hidden"));
+const appTitle = document.querySelector("h1");
+appTitle.addEventListener("click", () => {
+    if(appTitle.style.animation == "") {
+        appTitle.style.animation = "none";
+        localStorage.setItem("details-viewed", "true");
+    }
+    modal.classList.remove("hidden");
+});
 closeButton.addEventListener("click", () => modal.classList.add("hidden"));
 
 const licenseHeader = document.getElementById("license-header");
@@ -1237,6 +1242,9 @@ gotoActiveTimerBtn.onclick = () => {
 };
 
 (() => {
+    if(localStorage.getItem("details-viewed") === "true")
+        document.querySelector("h1").style.animation = "none";
+
     if (sets.length <= 0) return;
     initializeSets(sets);
 
