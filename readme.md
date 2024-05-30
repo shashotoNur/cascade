@@ -3,20 +3,19 @@
 [<img align="left" alt="project status" src="https://img.shields.io/badge/Status-Development-1D1A82?style=for-the-badge" />](#)&nbsp;&nbsp;
 [<img align="left" alt="license" src="https://img.shields.io/badge/License-MIT-750014?style=for-the-badge" />](LICENSE)&nbsp;&nbsp;
 
-
 A web based multi-stage scheduler app.
 
 ## Table of Contents
 
-- [Cascade](#cascade)
-  - [Table of Contents](#table-of-contents)
-  - [About](#about)
-  - [Visuals](#visuals)
-  - [Features](#features)
-  - [Usage Guide](#usage-guide)
-  - [License](#license)
-  - [Acknowledgement](#acknowledgement)
-  - [Contact](#contact)
+-   [Cascade](#cascade)
+    -   [Table of Contents](#table-of-contents)
+    -   [About](#about)
+    -   [Visuals](#visuals)
+    -   [Features](#features)
+    -   [Usage Guide](#usage-guide)
+    -   [License](#license)
+    -   [Acknowledgement](#acknowledgement)
+    -   [Contact](#contact)
 
 ## About
 
@@ -39,45 +38,45 @@ A complete list of its features can be found below.
 
 **Organization and Scheduling:**
 
-* Create multi-stage sets of timers for complex tasks.
-* Schedule sets to run at specific times of the day.
+-   Create multi-stage sets of timers for complex tasks.
+-   Schedule sets to run at specific times of the day.
 
 **Easy Editing and Management:**
 
-* Edit any aspect of timers or sets with ease.
-* Effortlessly add or remove time from active timers.
+-   Edit any aspect of timers or sets with ease.
+-   Effortlessly add or remove time from active timers.
 
 **Progress Visualization:**
 
-* Track progress with intuitive progress bars on both timers and sets.
+-   Track progress with intuitive progress bars on both timers and sets.
 
 **Real-Time Updates:**
 
-* Dynamic tab title displays the current countdown timer for quick reference.
+-   Dynamic tab title displays the current countdown timer for quick reference.
 
 **Seamless Data Management:**
 
-* Import and export your local data for easy backup and transfer.
+-   Import and export your local data for easy backup and transfer.
 
 **Copy Mechanism:**
 
-* Easily copy a timer to any of the existing sets.
+-   Easily copy a timer to any of the existing sets.
 
 **Alert Notifications:**
 
-* Set alerts for timer completions to stay informed.
+-   Set alerts for timer completions to stay informed.
 
 **Repeat timers in loop:**
 
-* Set loop for timer to restart it over and over again.
+-   Set loop for timer to restart it over and over again.
 
 **Flexible Controls:**
 
-* Pause, resume, or stop timers at any time.
+-   Pause, resume, or stop timers at any time.
 
 **Time Synchronization:**
 
-* Sync timers to start a scheduled set based on the current time.
+-   Sync timers to start a scheduled set based on the current time.
 
 ## Usage Guide
 
@@ -96,10 +95,10 @@ A complete list of its features can be found below.
 
 **Editing and Managing Timers and Sets:**
 
-* **Renaming:** Click directly on the current name of a set or timer and type the desired new name.
-* **Alerts:** Check the box next to "Alert" for a timer to ensure you receive a notification when it finishes.
-* **Editing:**
-* **Deleting:** Click the delete icon next to a set or timer to remove it completely.
+-   **Renaming:** Click directly on the current name of a set or timer and type the desired new name.
+-   **Alerts:** Check the box next to "Alert" for a timer to ensure you receive a notification when it finishes.
+-   **Editing:**
+-   **Deleting:** Click the delete icon next to a set or timer to remove it completely.
 
 **Running Timers:**
 
@@ -108,37 +107,37 @@ A complete list of its features can be found below.
 
 **Working with Active Timers:**
 
-* **Loops:** Check the box next to "Loop" for a timer to make it restart endlessly.
-* **Pause/Resume:** Click the "Pause" or "Resume" button to control the timer's progress.
-* **Stop:** Click the "Stop" button to completely end the timer and remove it from the "Active Timer" column.
-* **Adjusting Time:** Click the white box next to the current timer duration and adjust the value to add or remove time from the ongoing execution. Click "Save" to confirm the change.
-* **Skipping:** Use the "Previous" and "Next" buttons (if available) to navigate between timers within the active set.
+-   **Loops:** Check the box next to "Loop" for a timer to make it restart endlessly.
+-   **Pause/Resume:** Click the "Pause" or "Resume" button to control the timer's progress.
+-   **Stop:** Click the "Stop" button to completely end the timer and remove it from the "Active Timer" column.
+-   **Adjusting Time:** Click the white box next to the current timer duration and adjust the value to add or remove time from the ongoing execution. Click "Save" to confirm the change.
+-   **Skipping:** Use the "Previous" and "Next" buttons (if available) to navigate between timers within the active set.
 
 **Reordering and Data Management:**
 
-* Drag and drop sets and timers within their respective columns to rearrange them according to your preference.
-* Access the export and import functions from the navbar to save and load your data sets.
+-   Drag and drop sets and timers within their respective columns to rearrange them according to your preference.
+-   Access the export and import functions from the navbar to save and load your data sets.
 
 **Launching Scheduled Sets:**
 
-* Click the "⟲" button in the navbar to instantly launch any set that is scheduled for the current time.
+-   Click the "⟲" button in the navbar to instantly launch any set that is scheduled for the current time.
 
 **App Information:**
 
-* Click on the title "Cascade" to open a modal displaying details about the app.
+-   Click on the title "Cascade" to open a modal displaying details about the app.
 
 **Remember:** Timers require a set for creation. Get organized and productive with Cascade!
 
 **Additional Notes:**
 
 -   **Demo:** You can start personalizing it over [here](https://shashotoNur.github.io/cascade/).
--	**Sample data** The sample data from the screenshot is located in "sample/my-sets.json". You can import it into the app.
+-   **Sample data** The sample data from the screenshot is located in "sample/my-sets.json". You can import it into the app.
 
 ## [License](LICENSE)
 
 ## Acknowledgement
 
-- **[Information Bell](https://github.com/akx/Notifications/blob/master/OGG/Information_Bell.ogg)** by [akx](https://github.com/akx) has been used as the notification sound.
+-   **[Information Bell](https://github.com/akx/Notifications/blob/master/OGG/Information_Bell.ogg)** by [akx](https://github.com/akx) has been used as the notification sound.
 
 ## Contact
 
