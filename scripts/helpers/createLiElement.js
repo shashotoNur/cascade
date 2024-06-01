@@ -36,7 +36,7 @@ export const addNewTimer = () => {
 
     const newTimer = {
         title: "New Timer",
-        time: "000:00:00",
+        time: "00:00:00",
         alert: false,
     };
 

@@ -1,10 +1,13 @@
-import { truncateString } from "../logic/utils.js";
+import {
+    truncateString,
+    isOverlappingWithExistingSet,
+} from "../logic/utils.js";
 import { initializeSets } from "./initialize.js";
 import { createActiveTimer } from "../components/activeTimer.js";
 import { startCounting } from "../logic/timerCountdown.js";
 import { getSets, setSets } from "../logic/state.js";
 
-const createProgressBar = (max, id) => {
+export const createProgressBar = (max, id) => {
     const progress = document.createElement("progress");
     progress.className = "progress";
     progress.value = 0;
@@ -13,13 +16,13 @@ const createProgressBar = (max, id) => {
     return progress;
 };
 
-const createLabel = (text) => {
+export const createLabel = (text) => {
     const label = document.createElement("span");
     label.textContent = text;
     return label;
 };
 
-const createDurationPicker = (time) => {
+export const createDurationPicker = (time) => {
     const picker = document.createElement("input");
     picker.type = "text";
     picker.className = "duration-picker";
@@ -100,10 +103,12 @@ const createDurationPicker = (time) => {
     const validateInput = (event) => {
         const sectioned = event.target.value.split(":");
         if (sectioned.length !== 3) {
-            event.target.value = "000:00:00";
+            event.target.value = "00:00:00";
             return;
         }
-        if (isNaN(sectioned[0])) sectioned[0] = "000";
+        if (isNaN(sectioned[0])) sectioned[0] = "00";
+
+        if (sectioned[0] > 23 || sectioned[0].length > 2) sectioned[0] = "23";
 
         if (isNaN(sectioned[1]) || sectioned[1] < 0) sectioned[1] = "00";
 
@@ -116,7 +121,7 @@ const createDurationPicker = (time) => {
         event.target.value = sectioned.join(":");
     };
 
-    picker.value = time ? time : "000:00:00";
+    picker.value = time ? time : "00:00:00";
     picker.style.textAlign = "right";
     picker.addEventListener("keydown", (event) => {
         if (event.key == "ArrowDown" || event.key == "ArrowUp") {
@@ -142,7 +147,7 @@ const createDurationPicker = (time) => {
     return picker;
 };
 
-const createNavigationButton = ({ sIdx, tIdx }) => {
+export const createNavigationButton = ({ sIdx, tIdx }) => {
     const set = getSets()[sIdx];
     const timer = set.timers[tIdx];
 
@@ -158,33 +163,42 @@ const createNavigationButton = ({ sIdx, tIdx }) => {
     return btn;
 };
 
-const createScheduleButton = ({ sIdx, inputField }) => {
+export const createScheduleButton = ({ sIdx, inputField }) => {
     const sets = getSets();
     const setData = sets[sIdx];
+
+    const countdownDisplay = document.getElementById("countdown");
 
     const scheduleBtn = document.createElement("button");
     scheduleBtn.textContent = setData.scheduled ? "Scheduled" : "Not scheduled";
     scheduleBtn.addEventListener("click", () => {
+        if (!setData.scheduled) {
+            sets[sIdx].time =
+            inputField.value === "" ? "00:00" : inputField.value;
+            sets[sIdx].scheduled = true;
+
+            const { overlapping, setTitle } = isOverlappingWithExistingSet(
+                sets[sIdx],
+                sets
+            );
+
+            if (overlapping) {
+                countdownDisplay.textContent = `Set "${setTitle}" already occupies this time!`;
+                return setTimeout(() => {
+                    countdownDisplay.textContent = "";
+                }, 3000);
+            }
+            setData.time = inputField.value === "" ? "00:00" : inputField.value;
+        } else setData.time = null;
+
         setData.scheduled = !setData.scheduled;
         scheduleBtn.textContent = setData.scheduled
             ? "Scheduled"
             : "Not scheduled";
-
-        if (!setData.scheduled) setData.time = null;
-        else setData.time = inputField.value;
-
         sets[sIdx].scheduled = setData.scheduled;
 
         setSets(sets);
         initializeSets(sets);
     });
     return scheduleBtn;
-};
-
-export {
-    createProgressBar,
-    createLabel,
-    createDurationPicker,
-    createNavigationButton,
-    createScheduleButton,
 };

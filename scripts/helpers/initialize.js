@@ -2,7 +2,7 @@ import { createSet } from "../components/createSet.js";
 import { createTimer } from "../components/createTimer.js";
 import { getSets } from "../logic/state.js";
 
-const initializeSets = () => {
+export const initializeSets = () => {
     const sets = getSets();
     const setsList = document.getElementById("sets-list");
 
@@ -12,7 +12,7 @@ const initializeSets = () => {
     );
 };
 
-const initializeTimers = ({ sIdx }) => {
+export const initializeTimers = ({ sIdx }) => {
     const timersList = document.getElementById("timers-list");
     const timerUL = timersList.querySelector("ul");
 
@@ -29,5 +29,3 @@ const initializeTimers = ({ sIdx }) => {
         (btn) => (btn.title = `Display timers in ${set.title}`)
     );
 };
-
-export { initializeSets, initializeTimers };

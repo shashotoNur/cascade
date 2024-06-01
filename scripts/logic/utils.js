@@ -59,11 +59,104 @@ export const registerServiceworker = () => {
     }
 };
 
-export const moveCursorToEnd = (contentEle) => {
+export const moveCursorToEnd = (targetElement) => {
     const range = document.createRange();
     const selection = window.getSelection();
-    range.setStart(contentEle, contentEle.childNodes.length);
+    range.setStart(targetElement, targetElement.childNodes.length);
     range.collapse(true);
     selection.removeAllRanges();
     selection.addRange(range);
+};
+
+export const convertTimeFormat = (timeString) => {
+    // Check for valid input format (HH:MM:SS)
+    const timeRegex = /^([0-1][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$/;
+    if (!timeRegex.test(timeString)) {
+        console.error("Invalid time format. Please use HH:MM:SS format.");
+        return null;
+    }
+
+    const [hours, minutes, seconds] = timeString.split(":");
+    const parsedHours = parseInt(hours, 10);
+    const parsedMinutes = parseInt(minutes, 10);
+    // const parsedSeconds = parseInt(seconds, 10);
+
+    let meridian = "AM";
+    let newHours = parsedHours;
+    if (parsedHours >= 12) {
+        meridian = "PM";
+        newHours = parsedHours % 12;
+        if (newHours === 0) newHours = 12; // Handle midnight as 12:00 AM
+    } else if (parsedHours === 0) newHours = 12; // Handle noon as 12:00 PM
+
+    return `${newHours.toString().padStart(2, "0")}:${parsedMinutes
+        .toString()
+        .padStart(2, "0")} ${meridian}`;
+};
+
+export const getReadableEndTime = (startTimeString, timers) => {
+    const getTotalDurationInSeconds = (timers) => {
+        const timeStringToSeconds = (timeString) => {
+            const [hours, minutes, seconds] = timeString.split(":").map(Number);
+            return hours * 3600 + minutes * 60 + seconds;
+        };
+        return timers.reduce(
+            (total, timer) => total + timeStringToSeconds(timer.time),
+            0
+        );
+    };
+    const totalDurationSeconds = getTotalDurationInSeconds(timers);
+
+    const [startHours, startMinutes] = startTimeString.split(":").map(Number);
+    const now = new Date();
+    const startTime = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        startHours,
+        startMinutes
+    );
+
+    const endTime = new Date(startTime.getTime() + totalDurationSeconds * 1000);
+    return endTime.toTimeString().split(" ")[0]; // Format HH:MM:SS
+};
+
+export const isOverlappingWithExistingSet = (setData, sets) => {
+    const startOfSet = parseTimeString(setData.time + ":00");
+    const endOfSet = calculateEndTime(startOfSet, setData.timers);
+
+    let overlapping = false;
+    let setTitle = "";
+
+    sets.forEach((set) => {
+        if (!set.time || set.title === setData.title) return;
+
+        const startTime = parseTimeString(set.time + ":00");
+        const endTime = calculateEndTime(startTime, set.timers);
+
+        if (
+            (startOfSet >= startTime && startOfSet < endTime) ||
+            (endOfSet > startTime && endOfSet <= endTime)
+        ) {
+            setTitle = set.title;
+            overlapping = true;
+        }
+    });
+
+    return { overlapping, setTitle };
+};
+
+export const formatDuration = (seconds) => {
+    if (seconds === 0) return "00:00:00";
+
+    const hours = Math.floor(seconds / 3600)
+        .toString()
+        .padStart(2, "0");
+    const minutes = Math.floor((seconds % 3600) / 60)
+        .toString()
+        .padStart(2, "0");
+    const remainingSeconds = seconds % 60;
+    const secondsString = remainingSeconds.toString().padStart(2, "0");
+
+    return `${hours}:${minutes}:${secondsString}`;
 };

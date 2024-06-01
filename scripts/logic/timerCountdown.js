@@ -15,7 +15,7 @@ import {
 import { createActiveTimer } from "../components/activeTimer.js";
 import { initializeTimers } from "../helpers/initialize.js";
 
-const startCounting = ({ sIdx, tIdx, partialStart }) => {
+export const startCounting = ({ sIdx, tIdx, partialStart }) => {
     const countdownDisplay = document.getElementById("countdown");
 
     clearInterval(getIntervalId());
@@ -48,10 +48,9 @@ const startCounting = ({ sIdx, tIdx, partialStart }) => {
     set.timers.forEach((timer, i) => {
         let [hours, minutes, seconds] = timer.time.split(":").map(Number);
         const timerTimeInSec = hours * 3600 + minutes * 60 + seconds;
-        if (i < sIdx)
-            setCompletedDuration(getCompletedDuration() + timerTimeInSec);
 
         totalSetTime += timerTimeInSec;
+        if (i < tIdx) setCompletedDuration(totalSetTime);
     });
 
     const countdown = () => {
@@ -116,7 +115,7 @@ const startCounting = ({ sIdx, tIdx, partialStart }) => {
     setIntervalId(intervalId);
 };
 
-const findAndStartTimer = (currentTime) => {
+export const findAndStartTimer = (currentTime) => {
     const sets = getSets();
 
     let sIdx = 0;
@@ -160,5 +159,3 @@ const findAndStartTimer = (currentTime) => {
 
     setTimeout(() => (countdownDisplay.textContent = ""), 3000);
 };
-
-export { startCounting, findAndStartTimer };

@@ -5,15 +5,15 @@
         "timers": [
             {
                 "title": "Read fiction chapter",
-                "time": "000:30:00",
+                "time": "00:30:00",
                 "alert": false
             },
             {
                 "title": "Non-fiction article analysis",
-                "time": "000:45:00",
+                "time": "00:45:00",
                 "alert": true
             },
-            { "title": "Review notes", "time": "000:15:00", "alert": true }
+            { "title": "Review notes", "time": "00:15:00", "alert": true }
         ]
     },
     {
@@ -21,21 +21,21 @@
         "scheduled": true,
         "time": "13:00",
         "timers": [
-            { "title": "Prepare lunch", "time": "000:10:00", "alert": true },
-            { "title": "Eat and relax", "time": "000:30:00", "alert": false }
+            { "title": "Prepare lunch", "time": "00:10:00", "alert": true },
+            { "title": "Eat and relax", "time": "00:30:00", "alert": false }
         ]
     },
     {
         "title": "Errands",
         "scheduled": false,
         "timers": [
-            { "title": "Grocery shopping", "time": "000:45:00", "alert": true },
+            { "title": "Grocery shopping", "time": "00:45:00", "alert": true },
             {
                 "title": "Drop off package at post office",
-                "time": "000:15:00",
+                "time": "00:15:00",
                 "alert": false
             },
-            { "title": "Bank appointment", "time": "000:30:00", "alert": true }
+            { "title": "Bank appointment", "time": "00:30:00", "alert": true }
         ]
     },
     {
@@ -45,7 +45,7 @@
         "timers": [
             {
                 "title": "Presentation prep",
-                "time": "000:30:00",
+                "time": "00:30:00",
                 "alert": true
             },
             {
@@ -53,7 +53,7 @@
                 "time": "001:00:00",
                 "alert": false
             },
-            { "title": "Follow-up tasks", "time": "000:15:00", "alert": true }
+            { "title": "Follow-up tasks", "time": "00:15:00", "alert": true }
         ]
     }
 ]

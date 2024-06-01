@@ -1,4 +1,12 @@
-import { truncateString, hasTitle, moveCursorToEnd } from "../logic/utils.js";
+import {
+    truncateString,
+    hasTitle,
+    moveCursorToEnd,
+    convertTimeFormat,
+    getReadableEndTime,
+    isOverlappingWithExistingSet,
+    formatDuration,
+} from "../logic/utils.js";
 import {
     createProgressBar,
     createScheduleButton,
@@ -78,9 +86,21 @@ const createSetHeader = ({ sIdx }) => {
         titleDiv.title = newTitle;
     };
 
+    let totalSetTime = 0;
+    setData.timers.forEach((timer, i) => {
+        let [hours, minutes, seconds] = timer.time.split(":").map(Number);
+        const timerTimeInSec = hours * 3600 + minutes * 60 + seconds;
+
+        totalSetTime += timerTimeInSec;
+    });
+
     const timeDiv = document.createElement("div");
-    timeDiv.textContent = setData.scheduled ? setData.time : "Not scheduled";
-    timeDiv.title = "Scheduled time";
+    timeDiv.textContent = setData.scheduled
+        ? convertTimeFormat(setData.time + ":00") +
+          " - " +
+          convertTimeFormat(getReadableEndTime(setData.time, setData.timers))
+        : formatDuration(totalSetTime);
+    timeDiv.title = setData.scheduled ? "Scheduled time" : "Timer Duration";
 
     header.appendChild(titleDiv);
     header.appendChild(timeDiv);
@@ -91,6 +111,8 @@ const createSetHeader = ({ sIdx }) => {
 const createSetBody = ({ sIdx }) => {
     const sets = getSets();
     const setData = sets[sIdx];
+
+    const countdownDisplay = document.getElementById("countdown");
 
     const body = document.createElement("div");
     body.classList.add("body");
@@ -115,13 +137,27 @@ const createSetBody = ({ sIdx }) => {
             sets[sIdx].time = enteredTime;
             sets[sIdx].scheduled = true;
 
-            setSets(sets);
-            initializeSets(sets);
+            const { overlapping, setTitle } = isOverlappingWithExistingSet(
+                sets[sIdx],
+                sets
+            );
+
+            if (overlapping) {
+                countdownDisplay.textContent = `Set "${setTitle}" already occupies this time!`;
+                setTimeout(() => {
+                    countdownDisplay.textContent = "";
+                }, 3000);
+            } else {
+                setSets(sets);
+                initializeSets(sets);
+            }
         }
     });
 
     const scheduleBtn = createScheduleButton({ sIdx, inputField });
-    scheduleBtn.title = setData.scheduled ? "Remove schedule" : "Add schedule";
+    scheduleBtn.title = setData.scheduled
+        ? "Click to remove schedule"
+        : "Click to add schedule";
 
     const deleteButton = document.createElement("button");
     deleteButton.textContent = "Delete";

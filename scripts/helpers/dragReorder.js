@@ -3,14 +3,14 @@ import { getSets, setSets } from "../logic/state.js";
 let draggedItem = null;
 let orderOfArrays = [];
 
-const handleDragStart = (event) => {
+export const handleDragStart = (event) => {
     draggedItem = event.target;
     setTimeout(() => {
         event.target.style.display = "none";
     }, 0);
 };
 
-const handleDragOver = (event, list) => {
+export const handleDragOver = (event, list) => {
     event.preventDefault();
     const afterElement = getDragAfterElement(list, event.clientY);
 
@@ -18,7 +18,7 @@ const handleDragOver = (event, list) => {
     else list.insertBefore(draggedItem, afterElement);
 };
 
-const handleDragEnd = (event) => {
+export const handleDragEnd = (event) => {
     const sets = getSets();
     const currentSet = document.getElementById("current-set");
 
@@ -125,5 +125,3 @@ const getDragAfterElement = (container, y) => {
         { offset: Number.NEGATIVE_INFINITY }
     ).element;
 };
-
-export { handleDragStart, handleDragOver, handleDragEnd };

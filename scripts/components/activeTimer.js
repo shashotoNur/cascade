@@ -1,11 +1,15 @@
-import { truncateString, requestNotificationPermission } from "../logic/utils.js";
+import {
+    truncateString,
+    requestNotificationPermission,
+} from "../logic/utils.js";
 import {
     createProgressBar,
     createLabel,
     createDurationPicker,
     createNavigationButton,
 } from "../helpers/uiElements.js";
-import {getIntervalId,
+import {
+    getIntervalId,
     getCompletedDuration,
     getDuration,
     getSets,
@@ -136,7 +140,7 @@ const createActiveTimerBody = ({ sIdx, tIdx }) => {
         pauseBtn.textContent = ">";
     };
 
-    const zeroSec = "000:00:00";
+    const zeroSec = "00:00:00";
     const changeTimeInput = createDurationPicker(zeroSec);
     changeTimeInput.title =
         "Enter duration to add or remove time from the running timer for this session";

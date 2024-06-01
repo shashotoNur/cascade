@@ -1,7 +1,7 @@
 import { initializeSets, initializeTimers } from "../helpers/initialize.js";
 import { setSets } from "./state.js";
 
-const importDataFromFile = (event) => {
+export const importDataFromFile = (event) => {
     const file = event.target.files[0];
 
     if (!file) return;
@@ -23,7 +23,7 @@ const importDataFromFile = (event) => {
     reader.readAsText(file);
 };
 
-const exportDataToFile = () => {
+export const exportDataToFile = () => {
     const storedSetsString = localStorage.getItem("sets");
     if (!storedSetsString) return;
 
@@ -37,5 +37,3 @@ const exportDataToFile = () => {
 
     window.setTimeout(() => URL.revokeObjectURL(downloadLink.href), 10 * 1000);
 };
-
-export { importDataFromFile, exportDataToFile };

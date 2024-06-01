@@ -3,6 +3,7 @@ import {
     hasTitle,
     requestNotificationPermission,
     moveCursorToEnd,
+    isOverlappingWithExistingSet,
 } from "../logic/utils.js";
 import {
     createProgressBar,
@@ -200,8 +201,21 @@ const createTimerBody = ({ sIdx, tIdx }) => {
     saveBtn.title = "Click to update countdown duration";
     saveBtn.onclick = () => {
         sets[sIdx].timers[tIdx].time = inputField.value;
-        setSets(sets);
-        initializeTimers({ sIdx });
+
+        const { overlapping, setTitle } = isOverlappingWithExistingSet(
+            sets[sIdx],
+            sets
+        );
+
+        if (overlapping) {
+            countdownDisplay.textContent = `Set "${setTitle}" already occupies this time!`;
+            setTimeout(() => {
+                countdownDisplay.textContent = "";
+            }, 3000);
+        } else {
+            setSets(sets);
+            initializeTimers({ sIdx });
+        }
     };
 
     const startBtn = document.createElement("button");

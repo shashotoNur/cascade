@@ -97,7 +97,7 @@ A complete list of its features can be found below.
 
 -   **Renaming:** Click directly on the current name of a set or timer and type the desired new name.
 -   **Alerts:** Check the box next to "Alert" for a timer to ensure you receive a notification when it finishes.
--   **Editing:**
+-   **Editing:** Click on a timer's text input field to adjust its duration or other settings.
 -   **Deleting:** Click the delete icon next to a set or timer to remove it completely.
 
 **Running Timers:**
