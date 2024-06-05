@@ -24,38 +24,84 @@ export const createTimer = ({ sIdx, tIdx }) => {
     timer.classList.add("timer");
     timer.draggable = true;
 
-    const header = createTimerHeader({ sIdx, tIdx });
-    const body = createTimerBody({ sIdx, tIdx });
+    const header = createTimerHeader({ sIdx, tIdx, timerData });
+    const body = createTimerBody({ sIdx, tIdx, timerData });
 
     header.addEventListener("click", () => {
         body.style.maxHeight = body.style.maxHeight
             ? null
-            : body.scrollHeight + "px";
+            : `${body.scrollHeight}px`;
     });
 
     timer.appendChild(header);
     timer.appendChild(body);
 
-    const saveBtn = body.querySelector("button");
-    saveBtn.addEventListener("click", () => {});
+    const saveBtn = body.querySelector("button.save-btn");
+    saveBtn.addEventListener("click", () => {
+        /* Save logic here if needed */
+    });
 
     return timer;
 };
 
-const createTimerHeader = ({ sIdx, tIdx }) => {
-    const countdownDisplay = document.getElementById("countdown");
-
-    const set = getSets()[sIdx];
-    if (!set) return;
-    const timerData = set.timers[tIdx];
-    if (!timerData) return;
-
+const createTimerHeader = ({ sIdx, tIdx, timerData }) => {
     const header = document.createElement("div");
     header.classList.add("header");
+
+    const titleDiv = createTitleDiv({ sIdx, tIdx, timerData });
+    const timeDiv = createTimeDiv(timerData.time);
+
+    header.appendChild(titleDiv);
+    header.appendChild(timeDiv);
+
+    return header;
+};
+
+const createTimerBody = ({ sIdx, tIdx, timerData }) => {
+    const sets = getSets();
+    const set = sets[sIdx];
+    if (!set) return;
+
+    const body = document.createElement("div");
+    body.classList.add("body");
+
+    const progress = createProgressBar(
+        100,
+        `timer-${timerData.title.replace(" ", "-")}`
+    );
+    const alertBox = createAlertBox({ sIdx, tIdx, timerData });
+    const copyDiv = createCopyDiv({ timerData });
+    const inputField = createDurationPicker(timerData.time);
+    const saveBtn = createSaveButton({ sIdx, tIdx, inputField });
+    const startBtn = createStartButton({ sIdx, tIdx });
+    const deleteBtn = createDeleteButton({ sIdx, tIdx });
+
+    const checkboxDiv = document.createElement("div");
+    checkboxDiv.className = "checkbox-div";
+    const alertLabel = createLabel("Alert");
+    alertLabel.className = "checkbox-label";
+
+    checkboxDiv.appendChild(alertBox);
+    checkboxDiv.appendChild(alertLabel);
+    checkboxDiv.appendChild(copyDiv);
+
+    body.appendChild(progress);
+    body.appendChild(checkboxDiv);
+    body.appendChild(inputField);
+    body.appendChild(saveBtn);
+    body.appendChild(startBtn);
+    body.appendChild(deleteBtn);
+
+    return body;
+};
+
+const createTitleDiv = ({ sIdx, tIdx, timerData }) => {
+    const countdownDisplay = document.getElementById("countdown");
 
     const titleDiv = document.createElement("div");
     titleDiv.textContent = truncateString(timerData.title);
     titleDiv.title = timerData.title;
+
     titleDiv.onclick = () => {
         titleDiv.contentEditable = true;
         moveCursorToEnd(titleDiv);
@@ -68,15 +114,14 @@ const createTimerHeader = ({ sIdx, tIdx }) => {
         const newTitle = titleDiv.textContent.trim();
         titleDiv.contentEditable = false;
 
-        const titleExists = hasTitle(set.timers, newTitle);
-        if (titleExists) {
-            countdownDisplay.textContent = "Name already exists!";
-            setTimeout(() => (countdownDisplay.textContent = ""), 3000);
-            return (titleDiv.textContent = truncateString(timerData.title));
+        const set = getSets()[sIdx];
+        if (hasTitle(set.timers, newTitle)) {
+            showAlert(countdownDisplay, "Name already exists!");
+            titleDiv.textContent = truncateString(timerData.title);
+            return;
         }
 
         const sets = getSets();
-
         sets[sIdx].timers[tIdx].title = newTitle;
         setSets(sets);
 
@@ -84,70 +129,53 @@ const createTimerHeader = ({ sIdx, tIdx }) => {
         titleDiv.title = newTitle;
     };
 
-    const timeDiv = document.createElement("div");
-    timeDiv.textContent = timerData.time;
-    timeDiv.title = "Duration of countdown";
-
-    header.appendChild(titleDiv);
-    header.appendChild(timeDiv);
-
-    return header;
+    return titleDiv;
 };
 
-const createTimerBody = ({ sIdx, tIdx }) => {
-    const sets = getSets();
-    const set = sets[sIdx];
-    if (!set) return;
+const createTimeDiv = (time) => {
+    const timeDiv = document.createElement("div");
+    timeDiv.textContent = time;
+    timeDiv.title = "Duration of countdown";
+    return timeDiv;
+};
 
-    const timerData = set.timers[tIdx];
-    if (!timerData) return;
-
-    const currentSet = document.getElementById("current-set");
+const createAlertBox = ({ sIdx, tIdx, timerData }) => {
     const countdownDisplay = document.getElementById("countdown");
-
-    const body = document.createElement("div");
-    body.classList.add("body");
-
-    const progress = createProgressBar(
-        100,
-        `timer-${timerData.title.replace(" ", "-")}`
-    );
-    progress.title = "Progress bar";
-
     const alertBox = document.createElement("input");
     alertBox.setAttribute("type", "checkbox");
-    const alertBoxId = timerData.title.replace(" ", "-") + "-alertbox";
-    alertBox.id = alertBoxId;
+    alertBox.id = `${timerData.title.replace(" ", "-")}-alertbox`;
 
     alertBox.checked = timerData.alert;
     alertBox.title = alertBox.checked
         ? "You will be notified once countdown ends"
         : "Countdown will end quietly";
-    alertBox.onclick = async () => {
-        if (Notification.permission !== "granted" && alertBox.checked)
-            await requestNotificationPermission();
 
+    alertBox.onclick = async () => {
         if (Notification.permission !== "granted" && alertBox.checked) {
-            countdownDisplay.textContent = "Notifications are blocked!";
-            setTimeout(() => {
-                countdownDisplay.textContent = "";
-            }, 3000);
-            return (alertBox.checked = false);
+            await requestNotificationPermission();
         }
 
+        if (Notification.permission !== "granted" && alertBox.checked) {
+            showAlert(countdownDisplay, "Notifications are blocked!");
+            alertBox.checked = false;
+            return;
+        }
+
+        const sets = getSets();
         sets[sIdx].timers[tIdx].alert = alertBox.checked;
         setSets(sets);
 
-        if (
-            document.getElementById(
-                timerData.title.replace(" ", "-") + "-active-alertbox"
-            )
-        )
-            document.getElementById(
-                timerData.title.replace(" ", "-") + "-active-alertbox"
-            ).checked = alertBox.checked;
+        const activeAlertBox = document.getElementById(
+            `${timerData.title.replace(" ", "-")}-active-alertbox`
+        );
+        if (activeAlertBox) activeAlertBox.checked = alertBox.checked;
     };
 
+    return alertBox;
+};
+
+const createCopyDiv = ({ timerData }) => {
+    const sets = getSets();
     const copyDiv = document.createElement("div");
     copyDiv.className = "dropdown";
 
@@ -156,107 +184,106 @@ const createTimerBody = ({ sIdx, tIdx }) => {
     const copyLocations = document.createElement("div");
     copyLocations.className = "dropdown-content";
 
-    sets.forEach((set, idx) => {
-        const location = document.createElement("div");
-        location.textContent = set.title;
-        location.onclick = () => {
-            let i = 1,
-                timerTitle = timerData.title;
-
-            while (true) {
-                const titleExists = hasTitle(set.timers, timerTitle);
-                if (!titleExists) break;
-                timerTitle += ` (${i})`;
-                i++;
-            }
-
-            const copyingTimer = Object.assign({}, timerData, {
-                title: timerTitle,
-            });
-
-            sets[sIdx].timers.push(copyingTimer);
-
-            setSets(sets);
-            initializeTimers({ sIdx, tIdx });
-
-            currentSet.textContent = set.title;
-
-            countdownDisplay.textContent = `${timerData.title} has been copied to ${set.title}`;
-            setTimeout(() => {
-                countdownDisplay.textContent = "";
-            }, 3000);
-        };
-        copyLocations.appendChild(location);
-    });
-
     copyDiv.onclick = () => {
         copyLocations.style.display = "block";
     };
 
-    const inputField = createDurationPicker(timerData.time);
-    inputField.title = "Enter duration of countdown";
+    sets.forEach((set, idx) => {
+        const location = document.createElement("div");
+        location.textContent = set.title;
+        location.onclick = () => {
+            let i = 1;
+            let timerTitle = timerData.title;
 
+            while (hasTitle(set.timers, timerTitle)) {
+                timerTitle = `${timerData.title} (${i})`;
+                i++;
+            }
+
+            const copyingTimer = { ...timerData, title: timerTitle };
+            sets[idx].timers.push(copyingTimer);
+
+            setSets(sets);
+            initializeTimers({ sIdx: idx });
+
+            const currentSet = document.getElementById("current-set");
+            currentSet.textContent = set.title;
+
+            const countdownDisplay = document.getElementById("countdown");
+            showAlert(
+                countdownDisplay,
+                `${timerData.title} has been copied to ${set.title}`
+            );
+        };
+        copyLocations.appendChild(location);
+    });
+
+    copyDiv.appendChild(copyBtn);
+    copyDiv.appendChild(copyLocations);
+
+    return copyDiv;
+};
+
+const createSaveButton = ({ sIdx, tIdx, inputField }) => {
+    const countdownDisplay = document.getElementById("countdown");
     const saveBtn = document.createElement("button");
     saveBtn.textContent = "Save";
+    saveBtn.classList.add("save-btn");
     saveBtn.title = "Click to update countdown duration";
+
     saveBtn.onclick = () => {
+        const sets = getSets();
         sets[sIdx].timers[tIdx].time = inputField.value;
 
         const { overlapping, setTitle } = isOverlappingWithExistingSet(
             sets[sIdx],
             sets
         );
-
         if (overlapping) {
-            countdownDisplay.textContent = `Set "${setTitle}" already occupies this time!`;
-            setTimeout(() => {
-                countdownDisplay.textContent = "";
-            }, 3000);
+            showAlert(
+                countdownDisplay,
+                `Set "${setTitle}" already occupies this time!`
+            );
         } else {
             setSets(sets);
             initializeTimers({ sIdx });
         }
     };
 
+    return saveBtn;
+};
+
+const createStartButton = ({ sIdx, tIdx }) => {
     const startBtn = document.createElement("button");
     startBtn.textContent = "Start";
     startBtn.title = "Start the countdown";
+
     startBtn.onclick = () => {
         startCounting({ sIdx, tIdx, partialStart: false });
         document.getElementById("pause-btn").textContent = "||";
     };
 
+    return startBtn;
+};
+
+const createDeleteButton = ({ sIdx, tIdx }) => {
     const deleteBtn = document.createElement("button");
     deleteBtn.textContent = "Delete";
     deleteBtn.title = "Delete this timer";
-    deleteBtn.onclick = () => {
-        sets[sIdx].timers.splice(tIdx, 1);
 
+    deleteBtn.onclick = () => {
+        const sets = getSets();
+        sets[sIdx].timers.splice(tIdx, 1);
         setSets(sets);
         initializeTimers({ sIdx });
     };
 
-    const progressDiv = document.createElement("div");
-    progressDiv.appendChild(progress);
+    return deleteBtn;
+};
 
-    const checkboxDiv = document.createElement("div");
-    checkboxDiv.className = "checkbox-div";
-    const alertLabel = createLabel("Alert");
-    alertLabel.className = "checkbox-label";
-
-    checkboxDiv.appendChild(alertBox);
-    checkboxDiv.appendChild(alertLabel);
-
-    copyDiv.appendChild(copyBtn);
-    copyDiv.appendChild(copyLocations);
-    checkboxDiv.appendChild(copyDiv);
-
-    body.appendChild(progressDiv);
-    body.appendChild(checkboxDiv);
-    body.appendChild(inputField);
-    body.appendChild(saveBtn);
-    body.appendChild(startBtn);
-    body.appendChild(deleteBtn);
-
-    return body;
+const showAlert = (element, message) => {
+    element.textContent = message;
+    setTimeout(() => {
+        element.textContent = "";
+    }, 3000);
 };

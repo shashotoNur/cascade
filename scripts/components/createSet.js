@@ -15,51 +15,86 @@ import { initializeSets, initializeTimers } from "../helpers/initialize.js";
 import { getSets, setSets } from "../logic/state.js";
 
 export const createSet = ({ sIdx }) => {
-    const set = document.createElement("li");
-    set.classList.add("set");
-    set.draggable = true;
+    const setElement = document.createElement("li");
+    setElement.classList.add("set");
+    setElement.draggable = true;
 
     const sets = getSets();
-
     const header = createSetHeader({ sIdx });
     const body = createSetBody({ sIdx });
 
-    header.addEventListener("click", () => {
+    const toggleBodyVisibility = () => {
         body.style.maxHeight = body.style.maxHeight
             ? null
-            : body.scrollHeight + "px";
+            : `${body.scrollHeight}px`;
 
         Array.from(document.getElementsByClassName("body")).forEach((bd) => {
             if (body !== bd) bd.style.maxHeight = null;
         });
 
-        const { timers } = sets[sIdx];
-        if (body.style.maxHeight != "") {
-            const currentSet = document.getElementById("current-set");
-            currentSet.innerText = sets[sIdx].title;
-
+        if (body.style.maxHeight) {
+            document.getElementById("current-set").innerText = sets[sIdx].title;
             initializeTimers({ sIdx });
         }
-    });
+    };
 
-    set.appendChild(header);
-    set.appendChild(body);
+    header.addEventListener("click", toggleBodyVisibility);
 
-    return set;
+    setElement.appendChild(header);
+    setElement.appendChild(body);
+
+    return setElement;
 };
 
 const createSetHeader = ({ sIdx }) => {
     const sets = getSets();
     const setData = sets[sIdx];
 
-    const countdownDisplay = document.getElementById("countdown");
+    const header = createHeaderElement(setData);
+    const titleDiv = createTitleDiv(setData, sIdx, sets);
+    const timeDiv = createTimeDiv(setData);
+
+    header.appendChild(titleDiv);
+    header.appendChild(timeDiv);
+
+    return header;
+};
+
+const createSetBody = ({ sIdx }) => {
+    const sets = getSets();
+    const setData = sets[sIdx];
+
+    const body = createBodyElement();
+    const progress = createProgressBar(
+        100,
+        `set-${setData.title.replace(" ", "-")}`
+    );
+    const inputField = createInputField(setData, sIdx, sets);
+    const scheduleBtn = createScheduleButton({ sIdx, inputField });
+    const deleteButton = createDeleteButton(setData, sIdx, sets);
+
+    body.appendChild(progress);
+    body.appendChild(inputField);
+    body.appendChild(scheduleBtn);
+    body.appendChild(deleteButton);
+
+    return body;
+};
+
+const createHeaderElement = (setData) => {
     const header = document.createElement("div");
     header.classList.add("header");
-    header.id = "id-" + setData.title.replace(" ", "-") + "-header";
+    header.id = `id-${setData.title.replace(" ", "-")}-header`;
+    return header;
+};
+
+const createTitleDiv = (setData, sIdx, sets) => {
+    const countdownDisplay = document.getElementById("countdown");
 
     const titleDiv = document.createElement("div");
     titleDiv.textContent = truncateString(setData.title);
     titleDiv.title = setData.title;
+
     titleDiv.onclick = () => {
         titleDiv.contentEditable = true;
         moveCursorToEnd(titleDiv);
@@ -72,11 +107,10 @@ const createSetHeader = ({ sIdx }) => {
         const newTitle = titleDiv.textContent.trim();
         titleDiv.contentEditable = false;
 
-        const titleExists = hasTitle(sets, newTitle);
-        if (titleExists) {
-            countdownDisplay.textContent = "Name already exists!";
-            setTimeout(() => (countdownDisplay.textContent = ""), 3000);
-            return (titleDiv.textContent = truncateString(setData.title));
+        if (hasTitle(sets, newTitle)) {
+            showAlert(countdownDisplay, "Name already exists!");
+            titleDiv.textContent = truncateString(setData.title);
+            return;
         }
 
         sets[sIdx].title = newTitle;
@@ -86,44 +120,41 @@ const createSetHeader = ({ sIdx }) => {
         titleDiv.title = newTitle;
     };
 
-    let totalSetTime = 0;
-    setData.timers.forEach((timer, i) => {
-        let [hours, minutes, seconds] = timer.time.split(":").map(Number);
-        const timerTimeInSec = hours * 3600 + minutes * 60 + seconds;
+    return titleDiv;
+};
 
-        totalSetTime += timerTimeInSec;
-    });
-
+const createTimeDiv = (setData) => {
     const timeDiv = document.createElement("div");
+    const totalSetTime = setData.timers.reduce((total, timer) => {
+        const [hours, minutes, seconds] = timer.time.split(":").map(Number);
+        return total + (hours * 3600 + minutes * 60 + seconds);
+    }, 0);
+
     timeDiv.textContent = setData.scheduled
-        ? convertTimeFormat(setData.time + ":00") +
-          " - " +
-          convertTimeFormat(getReadableEndTime(setData.time, setData.timers))
+        ? `${convertTimeFormat(setData.time + ":00")} - ${convertTimeFormat(
+              getReadableEndTime(setData.time, setData.timers)
+          )}`
         : formatDuration(totalSetTime);
     timeDiv.title = setData.scheduled ? "Scheduled time" : "Timer Duration";
 
-    header.appendChild(titleDiv);
-    header.appendChild(timeDiv);
-
-    return header;
+    return timeDiv;
 };
 
-const createSetBody = ({ sIdx }) => {
-    const sets = getSets();
-    const setData = sets[sIdx];
+const showAlert = (element, message) => {
+    element.textContent = message;
+    setTimeout(() => (element.textContent = ""), 3000);
+};
 
-    const countdownDisplay = document.getElementById("countdown");
-
+const createBodyElement = () => {
     const body = document.createElement("div");
     body.classList.add("body");
+    return body;
+};
 
-    const progress = createProgressBar(
-        100,
-        `set-${setData.title.replace(" ", "-")}`
-    );
-    progress.title = "Progress bar";
-
+const createInputField = (setData, sIdx, sets) => {
+    const countdownDisplay = document.getElementById("countdown");
     const inputField = document.createElement("input");
+
     inputField.className = "input-field";
     inputField.type = "time";
     inputField.value = setData.scheduled ? setData.time : "";
@@ -143,10 +174,10 @@ const createSetBody = ({ sIdx }) => {
             );
 
             if (overlapping) {
-                countdownDisplay.textContent = `Set "${setTitle}" already occupies this time!`;
-                setTimeout(() => {
-                    countdownDisplay.textContent = "";
-                }, 3000);
+                showAlert(
+                    countdownDisplay,
+                    `Set "${setTitle}" already occupies this time!`
+                );
             } else {
                 setSets(sets);
                 initializeSets(sets);
@@ -154,32 +185,25 @@ const createSetBody = ({ sIdx }) => {
         }
     });
 
-    const scheduleBtn = createScheduleButton({ sIdx, inputField });
-    scheduleBtn.title = setData.scheduled
-        ? "Click to remove schedule"
-        : "Click to add schedule";
+    return inputField;
+};
 
+const createDeleteButton = (setData, sIdx, sets) => {
     const deleteButton = document.createElement("button");
     deleteButton.textContent = "Delete";
     deleteButton.title = "Delete this set";
+
     deleteButton.onclick = () => {
         sets.splice(sIdx, 1);
-
         setSets(sets);
         initializeSets(sets);
 
         const currentSet = document.getElementById("current-set");
         if (currentSet.textContent == setData.title) {
             if (sets[0]) initializeTimers({ sIdx: 0 });
-
             currentSet.textContent = sets[0] ? sets[0].title : "";
         }
     };
 
-    body.appendChild(progress);
-    body.appendChild(inputField);
-    body.appendChild(scheduleBtn);
-    body.appendChild(deleteButton);
-
-    return body;
+    return deleteButton;
 };

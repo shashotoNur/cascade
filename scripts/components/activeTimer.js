@@ -23,22 +23,28 @@ import { startCounting } from "../logic/timerCountdown.js";
 export const createActiveTimer = ({ sIdx, tIdx }) => {
     const set = getSets()[sIdx];
     if (!set) return;
+
     const timerData = set.timers[tIdx];
     if (!timerData) return;
 
     const timer = document.getElementById("active-timer");
     timer.textContent = "";
 
-    const header = document.createElement("div");
-    header.className = "header";
+    const createDiv = (className, textContent, title) => {
+        const div = document.createElement("div");
+        div.className = className || "";
+        div.textContent = textContent || "";
+        if (title) div.title = title;
+        return div;
+    };
 
-    const titleDiv = document.createElement("div");
-    titleDiv.textContent = truncateString(timerData.title);
-    titleDiv.title = timerData.title;
-
-    const timeDiv = document.createElement("div");
-    timeDiv.textContent = timerData.time;
-    timeDiv.title = "Duration of countdown";
+    const header = createDiv("header");
+    const titleDiv = createDiv(
+        null,
+        truncateString(timerData.title),
+        timerData.title
+    );
+    const timeDiv = createDiv(null, timerData.time, "Duration of countdown");
 
     header.appendChild(titleDiv);
     header.appendChild(timeDiv);
@@ -54,137 +60,149 @@ export const createActiveTimer = ({ sIdx, tIdx }) => {
 const createActiveTimerBody = ({ sIdx, tIdx }) => {
     const set = getSets()[sIdx];
     const timerData = set.timers[tIdx];
-
     const countdownDisplay = document.getElementById("countdown");
 
-    const detailDiv = document.createElement("div");
-    const controlDiv = document.createElement("div");
-    controlDiv.className = "control-div";
+    const createDiv = (className, children = []) => {
+        const div = document.createElement("div");
+        div.className = className || "";
+        children.forEach((child) => {
+            div.appendChild(child);
+        });
+        return div;
+    };
+
+    const createInput = (type, id, checked, title, onClick) => {
+        const input = document.createElement("input");
+        input.setAttribute("type", type);
+        input.id = id;
+        input.checked = checked;
+        input.title = title;
+        input.onclick = onClick;
+        return input;
+    };
+
+    const createButton = (id, text, title, onClick) => {
+        const button = document.createElement("button");
+        button.id = id;
+        button.textContent = text;
+        button.title = title;
+        button.onclick = onClick;
+        return button;
+    };
 
     const progress = createProgressBar(
         100,
-        `timer-${timerData.title.replace(" ", "-")}` + "-active"
+        `timer-${timerData.title.replace(" ", "-")}-active`
     );
     progress.title = "Progress bar";
 
-    const alertBox = document.createElement("input");
-    alertBox.setAttribute("type", "checkbox");
-    const alertBoxId = timerData.title.replace(" ", "-") + "-active-alertbox";
-    alertBox.id = alertBoxId;
+    const alertBoxId = `${timerData.title.replace(" ", "-")}-active-alertbox`;
+    const alertBox = createInput(
+        "checkbox",
+        alertBoxId,
+        timerData.alert,
+        timerData.alert
+            ? "You will be notified once countdown ends"
+            : "Countdown will end quietly",
+        async () => {
+            if (Notification.permission !== "granted" && alertBox.checked) {
+                await requestNotificationPermission();
+            }
 
-    alertBox.checked = timerData.alert;
-    alertBox.title = alertBox.checked
-        ? "You will be notified once countdown ends"
-        : "Countdown will end quietly";
+            if (Notification.permission !== "granted" && alertBox.checked) {
+                countdownDisplay.textContent = "Notifications are blocked!";
+                setTimeout(() => {
+                    countdownDisplay.textContent = "";
+                }, 3000);
+                return (alertBox.checked = false);
+            }
 
-    alertBox.onclick = async () => {
-        if (Notification.permission !== "granted" && alertBox.checked)
-            await requestNotificationPermission();
+            const sets = getSets();
+            sets[sIdx].timers[tIdx].alert = alertBox.checked;
+            setSets(sets);
 
-        if (Notification.permission !== "granted" && alertBox.checked) {
-            countdownDisplay.textContent = "Notifications are blocked!";
-            setTimeout(() => {
-                countdownDisplay.textContent = "";
-            }, 3000);
-
-            return (alertBox.checked = false);
+            document.getElementById(alertBoxId).checked = alertBox.checked;
         }
+    );
 
-        const sets = getSets();
-        sets[sIdx].timers[tIdx].alert = alertBox.checked;
-        setSets(sets);
-
-        document.getElementById(
-            timerData.title.replace(" ", "-") + "-alertbox"
-        ).checked = alertBox.checked;
-    };
-
-    const loopBox = document.createElement("input");
-    loopBox.setAttribute("type", "checkbox");
-    loopBox.id = timerData.title.replace(" ", "-") + "-active-loopbox";
-
-    loopBox.checked = timerData.loop;
-    loopBox.title = loopBox.checked
-        ? "The countdown will restart endlessly until stopped"
-        : "Countdown will end after a single run";
-    loopBox.onclick = async () => {
-        timerData.loop = loopBox.checked;
-        loopBox.title = loopBox.checked
+    const loopBox = createInput(
+        "checkbox",
+        `${timerData.title.replace(" ", "-")}-active-loopbox`,
+        timerData.loop,
+        timerData.loop
             ? "The countdown will restart endlessly until stopped"
-            : "Countdown will end after a single run";
-    };
+            : "Countdown will end after a single run",
+        () => {
+            timerData.loop = loopBox.checked;
+            loopBox.title = loopBox.checked
+                ? "The countdown will restart endlessly until stopped"
+                : "Countdown will end after a single run";
+        }
+    );
 
-    const pauseBtn = document.createElement("button");
-    pauseBtn.id = "pause-btn";
-    pauseBtn.textContent = ">";
-    pauseBtn.title = "Click to start timer";
-    pauseBtn.onclick = () => {
-        if (pauseBtn.textContent == "||") clearInterval(getIntervalId());
-        else startCounting({ sIdx, tIdx, partialStart: !!getIntervalId() });
+    const pauseBtn = createButton(
+        "pause-btn",
+        ">",
+        "Click to start timer",
+        () => {
+            const pauseBtn = document.getElementById("pause-btn");
+            const isRunning = pauseBtn.textContent === "||";
 
-        const thisBtn = document.getElementById("pause-btn");
-        thisBtn.textContent = pauseBtn.textContent == "||" ? ">" : "||";
-        thisBtn.title =
-            thisBtn.textContent == "||" ? "Click to pause" : "Click to resume";
-    };
+            if (isRunning) clearInterval(getIntervalId());
+            else startCounting({ sIdx, tIdx, partialStart: !!getIntervalId() });
 
-    const stopBtn = document.createElement("button");
-    stopBtn.textContent = "▣";
-    stopBtn.title = "Stop this timer";
-    stopBtn.onclick = () => {
+            document.getElementById("pause-btn").textContent = isRunning
+                ? ">"
+                : "||";
+
+            document.getElementById("pause-btn").title = isRunning
+                ? "Click to resume"
+                : "Click to pause";
+        }
+    );
+
+    const stopBtn = createButton(null, "▣", "Stop this timer", () => {
         clearInterval(getIntervalId());
         setIntervalId(null);
 
         countdownDisplay.textContent = "";
         document.title = "Cascade";
+
         pauseBtn.textContent = ">";
-    };
+        pauseBtn.title = "Click to start timer"
+    });
 
     const zeroSec = "00:00:00";
     const changeTimeInput = createDurationPicker(zeroSec);
     changeTimeInput.title =
         "Enter duration to add or remove time from the running timer for this session";
 
-    const removeTimeBtn = document.createElement("button");
-    removeTimeBtn.textContent = " - ";
-    removeTimeBtn.title = "Remove time";
-    removeTimeBtn.onclick = () => {
+    const adjustTime = (sign) => () => {
         let [hours, minutes, seconds] = changeTimeInput.value
             .split(":")
             .map(Number);
         const timeValue = hours * 3600 + minutes * 60 + seconds;
-        setDuration(getDuration() - timeValue);
-        setCompletedDuration(getCompletedDuration() + timeValue);
+        setDuration(getDuration() + sign * timeValue);
+        setCompletedDuration(getCompletedDuration() - sign * timeValue);
         changeTimeInput.value = zeroSec;
     };
 
-    const addTimeBtn = document.createElement("button");
-    addTimeBtn.textContent = " + ";
-    addTimeBtn.title = "Add time";
-    addTimeBtn.onclick = () => {
-        let [hours, minutes, seconds] = changeTimeInput.value
-            .split(":")
-            .map(Number);
-        const timeValue = hours * 3600 + minutes * 60 + seconds;
-        setDuration(getDuration() + timeValue);
-        setCompletedDuration(getCompletedDuration() - timeValue);
-        changeTimeInput.value = zeroSec;
-    };
+    const removeTimeBtn = createButton(
+        null,
+        " - ",
+        "Remove time",
+        adjustTime(-1)
+    );
+    const addTimeBtn = createButton(null, " + ", "Add time", adjustTime(1));
 
-    const firstControl = document.createElement("div");
-    firstControl.className = "first-control";
-    const secondControl = document.createElement("div");
-    secondControl.className = "second-control";
+    const firstControl = createDiv("first-control", [pauseBtn, stopBtn]);
+    const secondControl = createDiv("second-control", [
+        removeTimeBtn,
+        changeTimeInput,
+        addTimeBtn,
+    ]);
 
-    firstControl.appendChild(pauseBtn);
-    firstControl.appendChild(stopBtn);
-
-    secondControl.appendChild(removeTimeBtn);
-    secondControl.appendChild(changeTimeInput);
-    secondControl.appendChild(addTimeBtn);
-
-    controlDiv.appendChild(firstControl);
-    controlDiv.appendChild(secondControl);
+    const controlDiv = createDiv("control-div", [firstControl, secondControl]);
 
     const prevBtn = createNavigationButton({ sIdx, tIdx: tIdx - 1 });
     const nextBtn = createNavigationButton({ sIdx, tIdx: tIdx + 1 });
@@ -213,20 +231,14 @@ const createActiveTimerBody = ({ sIdx, tIdx }) => {
     checkboxDiv.appendChild(loopBox);
     checkboxDiv.appendChild(loopLabel);
 
-    const navDiv = document.createElement("div");
-    navDiv.className = "nav-btn-div";
-    navDiv.appendChild(prevBtn);
-    navDiv.appendChild(nextBtn);
-
-    detailDiv.appendChild(progressDiv);
-    detailDiv.appendChild(checkboxDiv);
-    detailDiv.appendChild(controlDiv);
-    detailDiv.appendChild(navDiv);
-
-    const body = document.createElement("div");
-    const lineBreak = document.createElement("br");
-    body.appendChild(lineBreak);
-    body.appendChild(detailDiv);
+    const navDiv = createDiv("nav-btn-div", [prevBtn, nextBtn]);
+    const detailDiv = createDiv("", [
+        createDiv("", [progress]),
+        checkboxDiv,
+        controlDiv,
+        navDiv,
+    ]);
+    const body = createDiv("", [document.createElement("br"), detailDiv]);
 
     return body;
 };

@@ -1,5 +1,6 @@
+import { createActiveTimer } from "../components/activeTimer.js";
 import { initializeSets, initializeTimers } from "../helpers/initialize.js";
-import { setSets } from "./state.js";
+import { setSets, getIntervalId } from "./state.js";
 
 export const importDataFromFile = (event) => {
     const file = event.target.files[0];
@@ -15,6 +16,8 @@ export const importDataFromFile = (event) => {
         setSets(sets);
         initializeSets();
         initializeTimers({ sIdx: 0 });
+        createActiveTimer({ sIdx: 0, tIdx: 0 });
+        clearInterval(getIntervalId());
 
         const currentSet = document.getElementById("current-set");
         currentSet.textContent = sets[0].title;

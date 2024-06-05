@@ -15,101 +15,180 @@ import {
 import { createActiveTimer } from "../components/activeTimer.js";
 import { initializeTimers } from "../helpers/initialize.js";
 
-export const startCounting = ({ sIdx, tIdx, partialStart }) => {
+const parseTime = (timeString) => {
+    const [hours, minutes, seconds] = timeString.split(":").map(Number);
+    return {
+        hours,
+        minutes,
+        seconds,
+        totalSeconds: hours * 3600 + minutes * 60 + seconds,
+    };
+};
+
+const formatTime = (duration) => {
+    let minutes = parseInt(duration / 60, 10);
+    let seconds = parseInt(duration % 60, 10);
+    return {
+        minutes: minutes < 10 ? "0" + minutes : minutes,
+        seconds: seconds < 10 ? "0" + seconds : seconds,
+    };
+};
+
+const updateProgressBar = (progressBarId, progress) => {
+    const progressBar = document.getElementById(progressBarId);
+    if (progressBar) progressBar.value = progress;
+};
+
+const updateCountdownDisplay = (prefix, minutes, seconds) => {
     const countdownDisplay = document.getElementById("countdown");
+    countdownDisplay.textContent = `${prefix} ${minutes ? minutes + ":" : ""}${seconds ? seconds : ""}`;
+    document.title = `${minutes ? minutes + ":" : "Cascade"}${seconds ? seconds : ""}`;
+};
 
-    clearInterval(getIntervalId());
-    setIntervalId(null);
+const resetCountdownDisplay = () => {
+    const countdownDisplay = document.getElementById("countdown");
+    countdownDisplay.textContent = "";
+    document.title = "Cascade";
+};
 
-    const set = getSets()[sIdx];
+const playAlert = () => {
+    const audio = document.getElementById("myAudio");
+    audio.play();
+    setTimeout(() => {
+        audio.pause();
+        audio.currentTime = 0;
+    }, 2000);
+};
+
+const initializeCountdown = ({
+    set,
+    timer,
+    prefix,
+    totalSetTime,
+    tIdx,
+    sIdx,
+    initialDuration,
+}) => {
+    const { totalSeconds: timerTimeInSec } = parseTime(timer.time);
+
+    const countdown = () => {
+        let duration = getDuration();
+        let { minutes, seconds } = formatTime(duration);
+
+        updateCountdownDisplay(prefix, minutes, seconds);
+
+        let elapsedTime = initialDuration - duration;
+        let progress = (elapsedTime * 100) / initialDuration;
+        updateProgressBar(`timer-${timer.title.replace(" ", "-")}`, progress);
+        updateProgressBar(
+            `timer-${timer.title.replace(" ", "-")}-active`,
+            progress
+        );
+
+        let completedDuration = getCompletedDuration();
+        let setProgress = (completedDuration * 100) / totalSetTime;
+        updateProgressBar(`set-${set.title.replace(" ", "-")}`, setProgress);
+
+        setCompletedDuration(completedDuration + 1);
+        setDuration(duration - 1);
+
+        if (duration < 0) {
+            clearInterval(getIntervalId());
+            setIntervalId(null);
+            updateProgressBar(`timer-${timer.title.replace(" ", "-")}`, 0);
+            updateProgressBar(
+                `timer-${timer.title.replace(" ", "-")}-active`,
+                0
+            );
+
+            if (timer.alert) {
+                sendNotification(timer.title);
+                playAlert();
+            }
+
+            let nextTimerIndex = timer.loop ? tIdx : tIdx + 1;
+            startCounting({ sIdx, tIdx: nextTimerIndex, partialStart: false });
+        }
+    };
+
+    return countdown;
+};
+
+const getCurrentSetElement = () => document.getElementById("current-set");
+
+const findCurrentSetIndex = (sets, currentTime) => {
+    return sets.findIndex((set) => {
+        if (!set.time) return false;
+        const startTime = parseTimeString(set.time + ":00");
+        const endTime = calculateEndTime(startTime, set.timers);
+        return currentTime >= startTime && currentTime <= endTime;
+    });
+};
+
+const findCurrentTimerIndex = (timers, elapsedTime) => {
+    let accumulatedTime = 0;
+    return timers.findIndex((timer) => {
+        accumulatedTime += parseTimeString(timer.time);
+        return elapsedTime < accumulatedTime;
+    });
+};
+
+const startTimer = (sets, sIdx, tIdx, elapsedTime) => {
+    const set = sets[sIdx];
+    const accumulatedTime = set.timers
+        .slice(0, tIdx + 1)
+        .reduce((acc, timer) => acc + parseTimeString(timer.time), 0);
+
+    initializeTimers({ sIdx });
+    setDuration(accumulatedTime - elapsedTime);
+
+    const currentSetElement = getCurrentSetElement();
+    currentSetElement.textContent = set.title;
+
+    startCounting({ sIdx, tIdx, partialStart: true });
+};
+
+export const startCounting = ({ sIdx, tIdx, partialStart }) => {
+    const sets = getSets();
+    const set = sets[sIdx];
     const timer = set.timers[tIdx];
 
-    const setProgressBar = document.getElementById(
-        `set-${set.title.replace(" ", "-")}`
-    );
-
     if (!timer) {
-        setProgressBar.value = 0;
-        countdownDisplay.textContent = "";
-        document.title = "Cascade";
+        resetCountdownDisplay();
         return;
     }
 
     createActiveTimer({ sIdx, tIdx });
 
-    const prefix = timer.title + " [" + set.title + "]: ";
-    let [hours, minutes, seconds] = timer.time.split(":").map(Number);
-    let initialDuration = hours * 3600 + minutes * 60 + seconds;
+    clearInterval(getIntervalId());
+    setIntervalId(null);
+
+    const { totalSeconds: initialDuration } = parseTime(timer.time);
     if (!partialStart) setDuration(initialDuration);
 
-    let totalSetTime = 0;
-    setCompletedDuration(0);
+    let totalSetTime = set.timers.reduce((acc, timer) => {
+        const { totalSeconds } = parseTime(timer.time);
+        return acc + totalSeconds;
+    }, 0);
 
-    set.timers.forEach((timer, i) => {
-        let [hours, minutes, seconds] = timer.time.split(":").map(Number);
-        const timerTimeInSec = hours * 3600 + minutes * 60 + seconds;
+    let completedDuration = set.timers.slice(0, tIdx).reduce((acc, timer) => {
+        const { totalSeconds } = parseTime(timer.time);
+        return acc + totalSeconds;
+    }, 0);
 
-        totalSetTime += timerTimeInSec;
-        if (i < tIdx) setCompletedDuration(totalSetTime);
+    setCompletedDuration(completedDuration);
+
+    const prefix = `${timer.title} [${set.title}]: `;
+    const countdown = initializeCountdown({
+        set,
+        timer,
+        prefix,
+        totalSetTime,
+        tIdx,
+        sIdx,
+        initialDuration,
     });
 
-    const countdown = () => {
-        minutes = parseInt(getDuration() / 60, 10);
-        seconds = parseInt(getDuration() % 60, 10);
-
-        minutes = minutes < 10 ? "0" + minutes : minutes;
-        seconds = seconds < 10 ? "0" + seconds : seconds;
-
-        countdownDisplay.textContent = prefix + minutes + ":" + seconds;
-        document.title = minutes + ":" + seconds;
-
-        const progressBar = document.getElementById(
-            `timer-${timer.title.replace(" ", "-")}`
-        );
-        const activeBar = document.getElementById(
-            `timer-${timer.title.replace(" ", "-")}-active`
-        );
-
-        if (initialDuration > 0) {
-            const d = initialDuration - getDuration();
-            if (d < 0) initialDuration += d * -1;
-
-            const progress = (d * 100) / initialDuration;
-            if (progressBar) progressBar.value = progress;
-            activeBar.value = progress;
-
-            if (getCompletedDuration() < 0)
-                totalSetTime += getCompletedDuration() * -1;
-
-            const setProgress = (getCompletedDuration() * 100) / totalSetTime;
-            if (setProgressBar) setProgressBar.value = setProgress;
-        }
-
-        setCompletedDuration(getCompletedDuration() + 1);
-        setDuration(getDuration() - 1);
-
-        if (getDuration() < 0) {
-            clearInterval(getIntervalId());
-            setIntervalId(null);
-
-            if (progressBar) progressBar.value = 0;
-            activeBar.value = 0;
-
-            if (timer.alert) {
-                sendNotification(timer.title);
-                const audio = document.getElementById("myAudio");
-                audio.play();
-
-                setTimeout(() => {
-                    audio.pause();
-                    audio.currentTime = 0;
-                }, 2000);
-            }
-
-            const nextTimerIndex = timer.loop ? tIdx : tIdx + 1;
-            startCounting({ sIdx, tIdx: nextTimerIndex, partialStart: false });
-        }
-    };
     countdown();
     const intervalId = setInterval(countdown, 1000);
     setIntervalId(intervalId);
@@ -117,45 +196,20 @@ export const startCounting = ({ sIdx, tIdx, partialStart }) => {
 
 export const findAndStartTimer = (currentTime) => {
     const sets = getSets();
+    const sIdx = findCurrentSetIndex(sets, currentTime);
 
-    let sIdx = 0;
-    for (const set of sets) {
-        if (set.time) {
-            const startTime = parseTimeString(set.time + ":00");
-            const endTime = calculateEndTime(startTime, set.timers);
+    if (sIdx !== -1) {
+        const set = sets[sIdx];
+        const startTime = parseTimeString(set.time + ":00");
+        const elapsedTime = currentTime - startTime;
+        const tIdx = findCurrentTimerIndex(set.timers, elapsedTime);
 
-            if (currentTime >= startTime && currentTime <= endTime) {
-                const elapsedTime = currentTime - startTime;
-                const { timers } = set;
-
-                let accumulatedTime = 0,
-                    tIdx = 0;
-
-                for (const timer of timers) {
-                    const timerDuration = parseTimeString(timer.time);
-                    accumulatedTime += timerDuration;
-
-                    if (elapsedTime < accumulatedTime) {
-                        initializeTimers({ sIdx });
-                        setDuration(accumulatedTime - elapsedTime);
-
-                        const currentSet =
-                            document.getElementById("current-set");
-                        currentSet.textContent = set.title;
-
-                        startCounting({ sIdx, tIdx, partialStart: true });
-                        return timer;
-                    }
-                    tIdx++;
-                }
-            }
+        if (tIdx !== -1) {
+            startTimer(sets, sIdx, tIdx, elapsedTime);
+            return set.timers[tIdx];
         }
-        sIdx++;
     }
 
-    const countdownDisplay = document.getElementById("countdown");
-    countdownDisplay.textContent = "No timer scheduled for now";
-    document.title = "Cascade";
-
-    setTimeout(() => (countdownDisplay.textContent = ""), 3000);
+    updateCountdownDisplay("No timer scheduled for now",);
+    setTimeout(() => updateCountdownDisplay(""), 3000);
 };

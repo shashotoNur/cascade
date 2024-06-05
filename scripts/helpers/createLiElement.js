@@ -5,56 +5,72 @@ import { getSets, setSets } from "../logic/state.js";
 export const addNewSet = () => {
     const sets = getSets();
 
-    const newSet = {
-        title: "New Set",
-        scheduled: false,
-        time: "",
-        timers: [],
-    };
-
-    let i = 1;
-    while (true) {
-        const titleExists = hasTitle(sets, newSet.title);
-        if (!titleExists) break;
-        newSet.title = `New Set (${i})`;
-        i++;
-    }
-
+    const newSet = createUniqueSet(sets, "New Set");
     sets.push(newSet);
-    initializeSets(sets);
-    setSets(sets);
 
-    const newSetHeader = document.getElementById(
-        "id-" + newSet.title.replace(" ", "-") + "-header"
-    );
-    newSetHeader.click();
+    updateAndInitializeSets(sets);
+    clickNewSetHeader(newSet.title);
 };
 
 export const addNewTimer = () => {
     const sets = getSets();
-    const currentSet = document.getElementById("current-set");
+    const currentSetTitle = document.getElementById("current-set").innerText;
 
-    const newTimer = {
-        title: "New Timer",
-        time: "00:00:00",
-        alert: false,
-    };
+    const sIdx = sets.findIndex((set) => set.title === currentSetTitle);
+    if (sIdx === -1) return console.log("No set matches");
 
-    const sIdx = sets.findIndex((set) => set.title === currentSet.innerText);
+    const newTimer = createUniqueTimer(sets[sIdx].timers, "New Timer");
 
-    if (sIdx == -1) return console.log("No set matches");
+    sets[sIdx].timers.push(newTimer);
+    updateAndInitializeTimers(sets, sIdx);
+};
 
-    const { timers } = sets[sIdx];
-
+const createUniqueSet = (sets, baseTitle) => {
+    let title = baseTitle;
     let i = 1;
-    while (true) {
-        const titleExists = hasTitle(timers, newTimer.title);
-        if (!titleExists) break;
-        newTimer.title = `New Timer (${i})`;
+
+    while (hasTitle(sets, title)) {
+        title = `${baseTitle} (${i})`;
         i++;
     }
 
-    sets[sIdx].timers.push(newTimer);
+    return {
+        title,
+        scheduled: false,
+        time: "",
+        timers: [],
+    };
+};
+
+const updateAndInitializeSets = (sets) => {
+    setSets(sets);
+    initializeSets(sets);
+};
+
+const clickNewSetHeader = (title) => {
+    const newSetHeader = document.getElementById(
+        `id-${title.replace(" ", "-")}-header`
+    );
+    newSetHeader.click();
+};
+
+const createUniqueTimer = (timers, baseTitle) => {
+    let title = baseTitle;
+    let i = 1;
+
+    while (hasTitle(timers, title)) {
+        title = `${baseTitle} (${i})`;
+        i++;
+    }
+
+    return {
+        title,
+        time: "00:00:00",
+        alert: false,
+    };
+};
+
+const updateAndInitializeTimers = (sets, sIdx) => {
     setSets(sets);
     initializeTimers({ sIdx });
 };

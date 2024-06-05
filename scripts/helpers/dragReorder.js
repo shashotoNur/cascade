@@ -13,97 +13,69 @@ export const handleDragStart = (event) => {
 export const handleDragOver = (event, list) => {
     event.preventDefault();
     const afterElement = getDragAfterElement(list, event.clientY);
-
     if (afterElement == null) list.appendChild(draggedItem);
     else list.insertBefore(draggedItem, afterElement);
 };
 
 export const handleDragEnd = (event) => {
     const sets = getSets();
-    const currentSet = document.getElementById("current-set");
+    const currentSetTitle = document.getElementById("current-set").innerText;
 
-    function allLiHaveSameClass(ulId, className) {
-        const ulElement = document.getElementById(ulId);
-        if (!ulElement) return false;
-
-        const liElements = ulElement.querySelectorAll("li." + className);
-        return liElements.length === ulElement.querySelectorAll("li").length;
+    if (!isValidList("sets", "set") || !isValidList("timers", "timer")) {
+        event.target.style.display = "block";
+        return;
     }
 
-    const setListHaveOnlySets = allLiHaveSameClass("sets", "set");
-    const timerListHaveOnlyTimers = allLiHaveSameClass("timers", "timer");
-
-    if (!setListHaveOnlySets || !timerListHaveOnlyTimers)
-        return (event.target.style.display = "block");
-
     setTimeout(() => {
-        if (event.target.className == "set") {
-            const ulElement = document.getElementById("sets");
-            const listItems = ulElement.querySelectorAll("li");
-
-            for (const listItem of listItems) {
-                const headerDiv = listItem.querySelector(
-                    ".header div:first-child"
-                );
-
-                if (headerDiv) {
-                    const textContent = headerDiv.textContent.trim();
-                    orderOfArrays.push(textContent);
-
-                    if (orderOfArrays.length == listItems.length) {
-                        const orderedSets = orderOfArrays.reduce(
-                            (acc, currentTitle) => {
-                                const matchingSet = sets.find(
-                                    (set) => set.title === currentTitle
-                                );
-                                acc.push(matchingSet);
-                                return acc;
-                            },
-                            []
-                        );
-                        setSets(orderedSets);
-                        orderOfArrays = [];
-                    }
-                }
-            }
+        if (event.target.classList.contains("set")) {
+            updateOrder("sets", sets, "set", (orderedSets) => {
+                setSets(orderedSets);
+            });
         } else {
-            const ulElement = document.getElementById("timers");
-            const listItems = ulElement.querySelectorAll("li");
-
-            for (const listItem of listItems) {
-                const headerDiv = listItem.querySelector(
-                    ".header div:first-child"
-                );
-
-                if (headerDiv) {
-                    const textContent = headerDiv.textContent.trim();
-                    orderOfArrays.push(textContent);
-
-                    if (orderOfArrays.length == listItems.length) {
-                        const targetSetIndex = sets.findIndex(
-                            (set) => set.title === currentSet.innerText
-                        );
-                        const { timers } = sets[targetSetIndex];
-                        const orderedTimers = orderOfArrays.reduce(
-                            (acc, currentTitle) => {
-                                const matchingSet = timers.find(
-                                    (timer) => timer.title === currentTitle
-                                );
-                                acc.push(matchingSet);
-                                return acc;
-                            },
-                            []
-                        );
-                        sets[targetSetIndex].timers = orderedTimers;
-                        setSets(sets);
-                        orderOfArrays = [];
-                    }
+            const targetSetIndex = sets.findIndex(
+                (set) => set.title === currentSetTitle
+            );
+            updateOrder(
+                "timers",
+                sets[targetSetIndex].timers,
+                "timer",
+                (orderedTimers) => {
+                    sets[targetSetIndex].timers = orderedTimers;
+                    setSets(sets);
                 }
-            }
+            );
         }
         event.target.style.display = "";
         draggedItem = null;
     }, 0);
+};
+
+const isValidList = (ulId, className) => {
+    const ulElement = document.getElementById(ulId);
+    if (!ulElement) return false;
+
+    const liElements = ulElement.querySelectorAll("li." + className);
+    return liElements.length === ulElement.querySelectorAll("li").length;
+};
+
+const updateOrder = (ulId, list, className, callback) => {
+    const ulElement = document.getElementById(ulId);
+    const listItems = ulElement.querySelectorAll("li");
+
+    orderOfArrays = Array.from(listItems).map((listItem) => {
+        const headerDiv = listItem.querySelector(".header div:first-child");
+        return headerDiv ? headerDiv.textContent.trim() : "";
+    });
+
+    if (orderOfArrays.length === listItems.length) {
+        const orderedList = orderOfArrays.reduce((acc, title) => {
+            const item = list.find((el) => el.title === title);
+            if (item) acc.push(item);
+            return acc;
+        }, []);
+        callback(orderedList);
+        orderOfArrays = [];
+    }
 };
 
 const getDragAfterElement = (container, y) => {
@@ -115,12 +87,10 @@ const getDragAfterElement = (container, y) => {
         (closest, child) => {
             const box = child.getBoundingClientRect();
             const offset = y - box.top - box.height / 2;
-            if (offset < 0 && offset > closest.offset)
-                return {
-                    offset: offset,
-                    element: child,
-                };
-            else return closest;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset, element: child };
+            }
+            return closest;
         },
         { offset: Number.NEGATIVE_INFINITY }
     ).element;

@@ -8,18 +8,16 @@ import { startCounting } from "../logic/timerCountdown.js";
 import { getSets, setSets } from "../logic/state.js";
 
 export const createProgressBar = (max, id) => {
-    const progress = document.createElement("progress");
-    progress.className = "progress";
-    progress.value = 0;
-    progress.max = max;
-    progress.id = id;
-    return progress;
+    return createElement("progress", {
+        className: "progress",
+        value: 0,
+        max,
+        id,
+    });
 };
 
 export const createLabel = (text) => {
-    const label = document.createElement("span");
-    label.textContent = text;
-    return label;
+    return createElement("span", { textContent: text });
 };
 
 export const createDurationPicker = (time) => {
@@ -148,57 +146,84 @@ export const createDurationPicker = (time) => {
 };
 
 export const createNavigationButton = ({ sIdx, tIdx }) => {
-    const set = getSets()[sIdx];
-    const timer = set.timers[tIdx];
+    const timer = getSets()[sIdx]?.timers[tIdx];
+    const title = timer ? truncateString(timer.title) : "None";
 
-    const btn = document.createElement("button");
-    btn.textContent = truncateString(timer?.title || "None");
-    btn.title = timer?.title || "None";
-    btn.disabled = !timer?.title;
-    btn.onclick = () => {
-        createActiveTimer({ sIdx, tIdx });
-        startCounting({ sIdx, tIdx, partialStart: false });
-        document.getElementById("pause-btn").textContent = "||";
-    };
-    return btn;
+    return createElement("button", {
+        textContent: title,
+        title: title,
+        disabled: !timer?.title,
+        onclick: handleNavigationButtonClick.bind(null, { sIdx, tIdx }),
+    });
 };
 
 export const createScheduleButton = ({ sIdx, inputField }) => {
+    const setData = getSets()[sIdx];
+    const buttonText = setData.scheduled ? "Scheduled" : "Not scheduled";
+
+    const scheduleBtn = createElement("button", { textContent: buttonText });
+
+    scheduleBtn.addEventListener("click", () => {
+        handleScheduleButtonClick({ sIdx, inputField, btn: scheduleBtn });
+    });
+
+    return scheduleBtn;
+};
+
+const createElement = (tag, options) => {
+    const element = document.createElement(tag);
+
+    if (options) {
+        for (const [key, value] of Object.entries(options)) {
+            if (key === "onclick") {
+                element.onclick = value;
+            } else {
+                element[key] = value;
+            }
+        }
+    }
+
+    return element;
+};
+
+const handleNavigationButtonClick = ({ sIdx, tIdx }) => {
+    const timer = getSets()[sIdx]?.timers[tIdx];
+    if (!timer) return;
+
+    createActiveTimer({ sIdx, tIdx });
+    startCounting({ sIdx, tIdx, partialStart: false });
+    document.getElementById("pause-btn").textContent = "||";
+};
+
+const handleScheduleButtonClick = ({ sIdx, inputField, btn }) => {
     const sets = getSets();
     const setData = sets[sIdx];
-
     const countdownDisplay = document.getElementById("countdown");
 
-    const scheduleBtn = document.createElement("button");
-    scheduleBtn.textContent = setData.scheduled ? "Scheduled" : "Not scheduled";
-    scheduleBtn.addEventListener("click", () => {
-        if (!setData.scheduled) {
-            sets[sIdx].time =
-            inputField.value === "" ? "00:00" : inputField.value;
-            sets[sIdx].scheduled = true;
+    if (!setData.scheduled) {
+        setData.time = inputField.value === "" ? "00:00" : inputField.value;
+        setData.scheduled = true;
 
-            const { overlapping, setTitle } = isOverlappingWithExistingSet(
-                sets[sIdx],
-                sets
-            );
+        const { overlapping, setTitle } = isOverlappingWithExistingSet(
+            setData,
+            sets
+        );
 
-            if (overlapping) {
-                countdownDisplay.textContent = `Set "${setTitle}" already occupies this time!`;
-                return setTimeout(() => {
-                    countdownDisplay.textContent = "";
-                }, 3000);
-            }
-            setData.time = inputField.value === "" ? "00:00" : inputField.value;
-        } else setData.time = null;
+        if (overlapping) {
+            countdownDisplay.textContent = `Set "${setTitle}" already occupies this time!`;
+            return setTimeout(() => {
+                countdownDisplay.textContent = "";
+            }, 3000);
+        }
+    } else {
+        setData.time = null;
+    }
 
-        setData.scheduled = !setData.scheduled;
-        scheduleBtn.textContent = setData.scheduled
-            ? "Scheduled"
-            : "Not scheduled";
-        sets[sIdx].scheduled = setData.scheduled;
+    sets[sIdx].scheduled = !setData.scheduled;
+    setSets(sets);
 
-        setSets(sets);
-        initializeSets(sets);
-    });
-    return scheduleBtn;
+    const buttonText = sets[sIdx].scheduled ? "Scheduled" : "Not scheduled";
+    btn.textContent = buttonText;
+
+    return btn;
 };
