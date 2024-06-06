@@ -1,4 +1,4 @@
-import { hasTitle } from "../logic/utils.js";
+import { hasTitle, truncateString } from "../logic/utils.js";
 import { initializeSets, initializeTimers } from "./initialize.js";
 import { getSets, setSets } from "../logic/state.js";
 
@@ -16,7 +16,7 @@ export const addNewTimer = () => {
     const sets = getSets();
     const currentSetTitle = document.getElementById("current-set").innerText;
 
-    const sIdx = sets.findIndex((set) => set.title === currentSetTitle);
+    const sIdx = sets.findIndex((set) => truncateString(set.title) === currentSetTitle);
     if (sIdx === -1) return console.log("No set matches");
 
     const newTimer = createUniqueTimer(sets[sIdx].timers, "New Timer");

@@ -6,6 +6,7 @@ import {
     getReadableEndTime,
     isOverlappingWithExistingSet,
     formatDuration,
+    showMessage,
 } from "../logic/utils.js";
 import {
     createProgressBar,
@@ -33,7 +34,7 @@ export const createSet = ({ sIdx }) => {
         });
 
         if (body.style.maxHeight) {
-            document.getElementById("current-set").innerText = sets[sIdx].title;
+            document.getElementById("current-set").innerText = truncateString(sets[sIdx].title);
             initializeTimers({ sIdx });
         }
     };
@@ -65,6 +66,8 @@ const createSetBody = ({ sIdx }) => {
     const setData = sets[sIdx];
 
     const body = createBodyElement();
+    body.id = `set-${setData.title}-body`;
+
     const progress = createProgressBar(
         100,
         `set-${setData.title.replace(" ", "-")}`
@@ -89,14 +92,13 @@ const createHeaderElement = (setData) => {
 };
 
 const createTitleDiv = (setData, sIdx, sets) => {
-    const countdownDisplay = document.getElementById("countdown");
-
     const titleDiv = document.createElement("div");
     titleDiv.textContent = truncateString(setData.title);
     titleDiv.title = setData.title;
 
     titleDiv.onclick = () => {
         titleDiv.contentEditable = true;
+        titleDiv.textContent = setData.title;
         moveCursorToEnd(titleDiv);
         titleDiv.focus();
     };
@@ -107,8 +109,14 @@ const createTitleDiv = (setData, sIdx, sets) => {
         const newTitle = titleDiv.textContent.trim();
         titleDiv.contentEditable = false;
 
+        if (newTitle === "") {
+            showMessage("Name cannot be empty", 3000);
+            titleDiv.textContent = truncateString(setData.title);
+            return;
+        }
+
         if (hasTitle(sets, newTitle)) {
-            showAlert(countdownDisplay, "Name already exists!");
+            showMessage("Name already exists.", 3000);
             titleDiv.textContent = truncateString(setData.title);
             return;
         }
@@ -140,11 +148,6 @@ const createTimeDiv = (setData) => {
     return timeDiv;
 };
 
-const showAlert = (element, message) => {
-    element.textContent = message;
-    setTimeout(() => (element.textContent = ""), 3000);
-};
-
 const createBodyElement = () => {
     const body = document.createElement("div");
     body.classList.add("body");
@@ -152,7 +155,6 @@ const createBodyElement = () => {
 };
 
 const createInputField = (setData, sIdx, sets) => {
-    const countdownDisplay = document.getElementById("countdown");
     const inputField = document.createElement("input");
 
     inputField.className = "input-field";
@@ -174,9 +176,9 @@ const createInputField = (setData, sIdx, sets) => {
             );
 
             if (overlapping) {
-                showAlert(
-                    countdownDisplay,
-                    `Set "${setTitle}" already occupies this time!`
+                showMessage(
+                    `Set "${setTitle}" already occupies this time!`,
+                    3000
                 );
             } else {
                 setSets(sets);
@@ -199,9 +201,9 @@ const createDeleteButton = (setData, sIdx, sets) => {
         initializeSets(sets);
 
         const currentSet = document.getElementById("current-set");
-        if (currentSet.textContent == setData.title) {
+        if (currentSet.textContent == truncateString(setData.title)) {
             if (sets[0]) initializeTimers({ sIdx: 0 });
-            currentSet.textContent = sets[0] ? sets[0].title : "";
+            currentSet.textContent = sets[0] ? truncateString(sets[0].title) : "";
         }
     };
 

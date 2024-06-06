@@ -1,6 +1,7 @@
 import {
     truncateString,
     requestNotificationPermission,
+    showMessage,
 } from "../logic/utils.js";
 import {
     createProgressBar,
@@ -60,7 +61,6 @@ export const createActiveTimer = ({ sIdx, tIdx }) => {
 const createActiveTimerBody = ({ sIdx, tIdx }) => {
     const set = getSets()[sIdx];
     const timerData = set.timers[tIdx];
-    const countdownDisplay = document.getElementById("countdown");
 
     const createDiv = (className, children = []) => {
         const div = document.createElement("div");
@@ -110,10 +110,7 @@ const createActiveTimerBody = ({ sIdx, tIdx }) => {
             }
 
             if (Notification.permission !== "granted" && alertBox.checked) {
-                countdownDisplay.textContent = "Notifications are blocked!";
-                setTimeout(() => {
-                    countdownDisplay.textContent = "";
-                }, 3000);
+                showMessage("Notifications are blocked!", 3000);
                 return (alertBox.checked = false);
             }
 
@@ -165,11 +162,11 @@ const createActiveTimerBody = ({ sIdx, tIdx }) => {
         clearInterval(getIntervalId());
         setIntervalId(null);
 
-        countdownDisplay.textContent = "";
+        showMessage("", -1);
         document.title = "Cascade";
 
         pauseBtn.textContent = ">";
-        pauseBtn.title = "Click to start timer"
+        pauseBtn.title = "Click to start timer";
     });
 
     const zeroSec = "00:00:00";

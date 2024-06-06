@@ -1,6 +1,6 @@
 # Cascade
 
-[<img align="left" alt="project status" src="https://img.shields.io/badge/Status-Development-1D1A82?style=for-the-badge" />](#)&nbsp;&nbsp;
+[<img align="left" alt="project status" src="https://img.shields.io/badge/Status-Completed-1D1A82?style=for-the-badge" />](#)&nbsp;&nbsp;
 [<img align="left" alt="license" src="https://img.shields.io/badge/License-MIT-750014?style=for-the-badge" />](LICENSE)&nbsp;&nbsp;
 
 A web based multi-stage scheduler app.

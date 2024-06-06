@@ -1,6 +1,7 @@
 import { createActiveTimer } from "../components/activeTimer.js";
 import { initializeSets, initializeTimers } from "../helpers/initialize.js";
 import { setSets, getIntervalId } from "./state.js";
+import { truncateString } from "./utils.js";
 
 export const importDataFromFile = (event) => {
     const file = event.target.files[0];
@@ -20,7 +21,7 @@ export const importDataFromFile = (event) => {
         clearInterval(getIntervalId());
 
         const currentSet = document.getElementById("current-set");
-        currentSet.textContent = sets[0].title;
+        currentSet.textContent = truncateString(sets[0].title);
     };
 
     reader.readAsText(file);

@@ -43,14 +43,10 @@
         "scheduled": true,
         "time": "10:30",
         "timers": [
-            {
-                "title": "Presentation prep",
-                "time": "00:30:00",
-                "alert": true
-            },
+            { "title": "Presentation prep", "time": "00:30:00", "alert": true },
             {
                 "title": "Meeting discussion",
-                "time": "001:00:00",
+                "time": "01:00:00",
                 "alert": false
             },
             { "title": "Follow-up tasks", "time": "00:15:00", "alert": true }

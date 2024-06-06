@@ -1,11 +1,12 @@
 import {
     truncateString,
     isOverlappingWithExistingSet,
+    showMessage,
 } from "../logic/utils.js";
-import { initializeSets } from "./initialize.js";
 import { createActiveTimer } from "../components/activeTimer.js";
 import { startCounting } from "../logic/timerCountdown.js";
 import { getSets, setSets } from "../logic/state.js";
+import { initializeSets } from "./initialize.js";
 
 export const createProgressBar = (max, id) => {
     return createElement("progress", {
@@ -162,6 +163,9 @@ export const createScheduleButton = ({ sIdx, inputField }) => {
     const buttonText = setData.scheduled ? "Scheduled" : "Not scheduled";
 
     const scheduleBtn = createElement("button", { textContent: buttonText });
+    scheduleBtn.title = setData.scheduled
+        ? "Click to remove schedule"
+        : "Click to add a schedule";
 
     scheduleBtn.addEventListener("click", () => {
         handleScheduleButtonClick({ sIdx, inputField, btn: scheduleBtn });
@@ -198,7 +202,6 @@ const handleNavigationButtonClick = ({ sIdx, tIdx }) => {
 const handleScheduleButtonClick = ({ sIdx, inputField, btn }) => {
     const sets = getSets();
     const setData = sets[sIdx];
-    const countdownDisplay = document.getElementById("countdown");
 
     if (!setData.scheduled) {
         setData.time = inputField.value === "" ? "00:00" : inputField.value;
@@ -209,21 +212,20 @@ const handleScheduleButtonClick = ({ sIdx, inputField, btn }) => {
             sets
         );
 
-        if (overlapping) {
-            countdownDisplay.textContent = `Set "${setTitle}" already occupies this time!`;
-            return setTimeout(() => {
-                countdownDisplay.textContent = "";
-            }, 3000);
-        }
+        if (overlapping)
+            return showMessage(
+                `Set "${setTitle}" already occupies this time!`,
+                3000
+            );
     } else {
         setData.time = null;
+        setData.scheduled = false;
     }
 
-    sets[sIdx].scheduled = !setData.scheduled;
+    sets[sIdx] = setData;
     setSets(sets);
 
-    const buttonText = sets[sIdx].scheduled ? "Scheduled" : "Not scheduled";
-    btn.textContent = buttonText;
+    initializeSets();
 
     return btn;
 };

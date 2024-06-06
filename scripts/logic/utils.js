@@ -1,6 +1,21 @@
+import { setShowMsg } from "./state.js";
+
 export const hasTitle = (array, title) => {
     for (const object of array) if (object.title === title) return true;
     return false;
+};
+
+export const showMessage = (msg, timeout) => {
+    const countdownDisplay = document.getElementById("countdown");
+    countdownDisplay.textContent = msg == " " ? "" : msg;
+
+    if (timeout == -1) return;
+    setShowMsg(true);
+
+    setTimeout(() => {
+        countdownDisplay.textContent = "";
+        setShowMsg(false);
+    }, timeout);
 };
 
 export const truncateString = (str, maxLength = 32) => {
@@ -159,4 +174,17 @@ export const formatDuration = (seconds) => {
     const secondsString = remainingSeconds.toString().padStart(2, "0");
 
     return `${hours}:${minutes}:${secondsString}`;
+};
+
+export const addPaddingToTime = (timeString) => {
+    const regex = /(\d+):(\d+):(\d+)/;
+    const match = regex.exec(timeString);
+
+    if (!match) return timeString;
+
+    const hours = match[1].padStart(2, "0");
+    const minutes = match[2].padStart(2, "0");
+    const seconds = match[3].padStart(2, "0");
+
+    return `${hours}:${minutes}:${seconds}`;
 };

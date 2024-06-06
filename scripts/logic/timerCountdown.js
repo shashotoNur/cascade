@@ -6,11 +6,14 @@ import {
     setDuration,
     getSets,
     setIntervalId,
+    isShowingMsg,
 } from "./state.js";
 import {
     parseTimeString,
     calculateEndTime,
     sendNotification,
+    showMessage,
+    truncateString,
 } from "./utils.js";
 import { createActiveTimer } from "../components/activeTimer.js";
 import { initializeTimers } from "../helpers/initialize.js";
@@ -40,14 +43,18 @@ const updateProgressBar = (progressBarId, progress) => {
 };
 
 const updateCountdownDisplay = (prefix, minutes, seconds) => {
-    const countdownDisplay = document.getElementById("countdown");
-    countdownDisplay.textContent = `${prefix} ${minutes ? minutes + ":" : ""}${seconds ? seconds : ""}`;
-    document.title = `${minutes ? minutes + ":" : "Cascade"}${seconds ? seconds : ""}`;
+    document.title = `${minutes ? minutes + ":" : "Cascade"}${
+        seconds ? seconds : ""
+    }`;
+    if (isShowingMsg()) return;
+    showMessage(
+        `${prefix} ${minutes ? minutes + ":" : ""}${seconds ? seconds : ""}`,
+        -1
+    );
 };
 
 const resetCountdownDisplay = () => {
-    const countdownDisplay = document.getElementById("countdown");
-    countdownDisplay.textContent = "";
+    showMessage("", -1);
     document.title = "Cascade";
 };
 
@@ -69,8 +76,6 @@ const initializeCountdown = ({
     sIdx,
     initialDuration,
 }) => {
-    const { totalSeconds: timerTimeInSec } = parseTime(timer.time);
-
     const countdown = () => {
         let duration = getDuration();
         let { minutes, seconds } = formatTime(duration);
@@ -143,7 +148,7 @@ const startTimer = (sets, sIdx, tIdx, elapsedTime) => {
     setDuration(accumulatedTime - elapsedTime);
 
     const currentSetElement = getCurrentSetElement();
-    currentSetElement.textContent = set.title;
+    currentSetElement.textContent = truncateString(set.title);
 
     startCounting({ sIdx, tIdx, partialStart: true });
 };
@@ -157,6 +162,9 @@ export const startCounting = ({ sIdx, tIdx, partialStart }) => {
         resetCountdownDisplay();
         return;
     }
+
+    const activeSetBody = document.getElementById(`set-${set.title}-body`);
+    activeSetBody.style.maxHeight = `${activeSetBody.scrollHeight}px`;
 
     createActiveTimer({ sIdx, tIdx });
 
@@ -206,10 +214,11 @@ export const findAndStartTimer = (currentTime) => {
 
         if (tIdx !== -1) {
             startTimer(sets, sIdx, tIdx, elapsedTime);
+            setCompletedDuration(elapsedTime);
             return set.timers[tIdx];
         }
     }
 
-    updateCountdownDisplay("No timer scheduled for now",);
+    updateCountdownDisplay("No timer scheduled for now");
     setTimeout(() => updateCountdownDisplay(""), 3000);
 };

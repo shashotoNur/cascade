@@ -17,7 +17,10 @@ import {
 import { createActiveTimer } from "./scripts/components/activeTimer.js";
 import { findAndStartTimer } from "./scripts/logic/timerCountdown.js";
 import { setSets } from "./scripts/logic/state.js";
-import { registerServiceworker } from "./scripts/logic/utils.js";
+import {
+    registerServiceworker,
+    truncateString,
+} from "./scripts/logic/utils.js";
 
 const getElement = (id) => document.getElementById(id);
 const getElements = (className) => document.getElementsByClassName(className);
@@ -60,7 +63,7 @@ const initializeApp = () => {
     if (sets.length <= 0) return;
 
     initializeSets();
-    currentSet.innerText = sets[0].title;
+    currentSet.innerText = truncateString(sets[0].title);
     initializeTimers({ sIdx: 0 });
     createActiveTimer({ sIdx: 0, tIdx: 0 });
 
@@ -100,9 +103,14 @@ const setupEventListeners = () => {
 };
 
 const handleImportBtnProxyClick = () => {
-    const proceed = confirm(
-        "Any of your existing data will be overwritten. Do you wish to proceed?"
-    );
+    const sets = localStorage.getItem("sets");
+    const dataExists = sets && sets !== "[]";
+
+    let proceed = true;
+    if (dataExists)
+        proceed = confirm(
+            "Your existing data will be overwritten. Do you wish to proceed?"
+        );
     if (proceed) importBtn.click();
 };
 

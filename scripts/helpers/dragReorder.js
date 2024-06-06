@@ -1,4 +1,5 @@
 import { getSets, setSets } from "../logic/state.js";
+import { truncateString } from "../logic/utils.js";
 
 let draggedItem = null;
 let orderOfArrays = [];
@@ -33,7 +34,7 @@ export const handleDragEnd = (event) => {
             });
         } else {
             const targetSetIndex = sets.findIndex(
-                (set) => set.title === currentSetTitle
+                (set) => truncateString(set.title) === currentSetTitle
             );
             updateOrder(
                 "timers",

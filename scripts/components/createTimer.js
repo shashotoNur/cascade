@@ -4,6 +4,8 @@ import {
     requestNotificationPermission,
     moveCursorToEnd,
     isOverlappingWithExistingSet,
+    showMessage,
+    addPaddingToTime,
 } from "../logic/utils.js";
 import {
     createProgressBar,
@@ -96,14 +98,13 @@ const createTimerBody = ({ sIdx, tIdx, timerData }) => {
 };
 
 const createTitleDiv = ({ sIdx, tIdx, timerData }) => {
-    const countdownDisplay = document.getElementById("countdown");
-
     const titleDiv = document.createElement("div");
     titleDiv.textContent = truncateString(timerData.title);
     titleDiv.title = timerData.title;
 
     titleDiv.onclick = () => {
         titleDiv.contentEditable = true;
+        titleDiv.textContent = timerData.title;
         moveCursorToEnd(titleDiv);
         titleDiv.focus();
     };
@@ -115,8 +116,15 @@ const createTitleDiv = ({ sIdx, tIdx, timerData }) => {
         titleDiv.contentEditable = false;
 
         const set = getSets()[sIdx];
+
+        if (newTitle === "") {
+            showMessage("Name cannot be empty", 3000);
+            titleDiv.textContent = truncateString(timerData.title);
+            return;
+        }
+
         if (hasTitle(set.timers, newTitle)) {
-            showAlert(countdownDisplay, "Name already exists!");
+            showMessage("Name already exists", 3000);
             titleDiv.textContent = truncateString(timerData.title);
             return;
         }
@@ -140,7 +148,6 @@ const createTimeDiv = (time) => {
 };
 
 const createAlertBox = ({ sIdx, tIdx, timerData }) => {
-    const countdownDisplay = document.getElementById("countdown");
     const alertBox = document.createElement("input");
     alertBox.setAttribute("type", "checkbox");
     alertBox.id = `${timerData.title.replace(" ", "-")}-alertbox`;
@@ -156,7 +163,7 @@ const createAlertBox = ({ sIdx, tIdx, timerData }) => {
         }
 
         if (Notification.permission !== "granted" && alertBox.checked) {
-            showAlert(countdownDisplay, "Notifications are blocked!");
+            showMessage("Notifications are blocked!", 3000);
             alertBox.checked = false;
             return;
         }
@@ -207,12 +214,11 @@ const createCopyDiv = ({ timerData }) => {
             initializeTimers({ sIdx: idx });
 
             const currentSet = document.getElementById("current-set");
-            currentSet.textContent = set.title;
+            currentSet.textContent = truncateString(set.title);
 
-            const countdownDisplay = document.getElementById("countdown");
-            showAlert(
-                countdownDisplay,
-                `${timerData.title} has been copied to ${set.title}`
+            showMessage(
+                `${timerData.title} has been copied to ${set.title}`,
+                3000
             );
         };
         copyLocations.appendChild(location);
@@ -225,7 +231,6 @@ const createCopyDiv = ({ timerData }) => {
 };
 
 const createSaveButton = ({ sIdx, tIdx, inputField }) => {
-    const countdownDisplay = document.getElementById("countdown");
     const saveBtn = document.createElement("button");
     saveBtn.textContent = "Save";
     saveBtn.classList.add("save-btn");
@@ -233,18 +238,16 @@ const createSaveButton = ({ sIdx, tIdx, inputField }) => {
 
     saveBtn.onclick = () => {
         const sets = getSets();
-        sets[sIdx].timers[tIdx].time = inputField.value;
+        const newDuration = addPaddingToTime(inputField.value);
+        sets[sIdx].timers[tIdx].time = newDuration;
 
         const { overlapping, setTitle } = isOverlappingWithExistingSet(
             sets[sIdx],
             sets
         );
-        if (overlapping) {
-            showAlert(
-                countdownDisplay,
-                `Set "${setTitle}" already occupies this time!`
-            );
-        } else {
+        if (overlapping)
+            showMessage(`Set "${setTitle}" already occupies this time!`, 3000);
+        else {
             setSets(sets);
             initializeTimers({ sIdx });
         }
@@ -279,11 +282,4 @@ const createDeleteButton = ({ sIdx, tIdx }) => {
     };
 
     return deleteBtn;
-};
-
-const showAlert = (element, message) => {
-    element.textContent = message;
-    setTimeout(() => {
-        element.textContent = "";
-    }, 3000);
 };
